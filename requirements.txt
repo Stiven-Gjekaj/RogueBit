@@ -1,0 +1,15 @@
+# RogueBit build requirements
+
+# .NET SDK (required to build and run)
+dotnet-sdk>=8.0.100
+
+# Notes:
+# - NuGet dependencies are restored automatically by `dotnet restore`/`dotnet build`.
+#   Packages and versions are specified in src/RogueBit/RogueBit.csproj:
+#   - SadConsole==10.14.0
+#   - SadRogue.Primitives==1.0.4
+#   - GoRogue==3.1.0
+#   - Newtonsoft.Json==13.0.3
+# - Optional: set USE_ASCII=1 to replace the heart (♥) glyph with 'h' if your terminal
+#   font does not support it.
+
