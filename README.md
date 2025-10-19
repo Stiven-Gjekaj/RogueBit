@@ -72,5 +72,3 @@ dotnet run -- --seed 12345
 
 - Windows: `%AppData%/RogueBit/highscore.json`
 - Linux/macOS: `$XDG_DATA_HOME/RogueBit/highscore.json` or `~/.local/share/RogueBit/highscore.json` if `XDG_DATA_HOME` is not set.
-
----
