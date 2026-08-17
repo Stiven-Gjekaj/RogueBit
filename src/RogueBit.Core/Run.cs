@@ -32,6 +32,7 @@ public sealed class Run
 
     private readonly List<Monster> monsters = [];
     private readonly List<Item> items = [];
+    private readonly List<TurnEvent> turnEvents = [];
 
     public int Seed { get; }
 
@@ -55,6 +56,12 @@ public sealed class Run
     public IReadOnlyList<Monster> Monsters => monsters;
 
     public IReadOnlyList<Item> Items => items;
+
+    /// <summary>
+    /// What happened during the last action, for a frontend to draw. Cleared at
+    /// the start of every action, so it never describes an older turn.
+    /// </summary>
+    public IReadOnlyList<TurnEvent> LastTurnEvents => turnEvents;
 
     /// <summary>The score, which is coins gathered plus a bonus for depth.</summary>
     public int Score => Player.Coins + ((Depth - 1) * 10);
@@ -141,6 +148,7 @@ public sealed class Run
 
         if (MonsterAt(target) is { } monster)
         {
+            BeginTurn();
             AttackMonster(monster);
             EndTurn();
             return ActionResult.Took;
@@ -148,6 +156,7 @@ public sealed class Run
 
         if (!Map.IsWalkable(target)) return ActionResult.Refused;
 
+        BeginTurn();
         Player.Position = target;
         TakeCoinsUnderfoot();
         AnnounceWhatIsUnderfoot();
@@ -160,6 +169,7 @@ public sealed class Run
     {
         if (IsOver) return ActionResult.Refused;
 
+        BeginTurn();
         EndTurn();
         return ActionResult.Took;
     }
@@ -183,8 +193,10 @@ public sealed class Run
             return ActionResult.Refused;
         }
 
+        BeginTurn();
         items.Remove(item);
         Log.Add($"You pick up {item.Name}.", MessageKind.Good);
+        turnEvents.Add(new TurnEvent(TurnEventKind.Pickup, Player.Position));
         EndTurn();
         return ActionResult.Took;
     }
@@ -199,6 +211,7 @@ public sealed class Run
         {
             if (!Inventory.TryEquip(item)) return ActionResult.Refused;
 
+            BeginTurn();
             Log.Add($"You ready {item.Name}.", MessageKind.Good);
             EndTurn();
             return ActionResult.Took;
@@ -206,12 +219,15 @@ public sealed class Run
 
         if (item.Kind != ItemKind.Potion) return ActionResult.Refused;
 
+        BeginTurn();
         int restored = Player.Heal(item.Healing);
         Inventory.Remove(item);
 
         Log.Add(
             restored > 0 ? $"You drink {item.Name} and recover {restored}." : "You are already whole.",
             restored > 0 ? MessageKind.Good : MessageKind.Normal);
+
+        if (restored > 0) turnEvents.Add(new TurnEvent(TurnEventKind.Heal, Player.Position, restored));
 
         EndTurn();
         return ActionResult.Took;
@@ -228,8 +244,10 @@ public sealed class Run
             return ActionResult.Refused;
         }
 
+        BeginTurn();
         EnterFloor(Depth + 1);
         Log.Add($"You descend to floor {Depth}.", MessageKind.Good);
+        turnEvents.Add(new TurnEvent(TurnEventKind.Descend, Player.Position));
         return ActionResult.Took;
     }
 
@@ -297,8 +315,14 @@ public sealed class Run
             CombatResolver.Describe("you", monster.Name, result, attackerIsPlayer: true),
             result.Killed ? MessageKind.Good : MessageKind.Normal);
 
+        turnEvents.Add(new TurnEvent(
+            result.Hit ? TurnEventKind.Hit : TurnEventKind.Blocked,
+            monster.Position,
+            result.Damage));
+
         if (!result.Killed) return;
 
+        turnEvents.Add(new TurnEvent(TurnEventKind.Death, monster.Position));
         Player.TakeCoins(monster.CoinReward);
         monsters.Remove(monster);
     }
@@ -324,6 +348,13 @@ public sealed class Run
             Log.Add("A staircase leads down from here.");
         }
     }
+
+    /// <summary>
+    /// Marks the point where an action is certain to happen. Everything before
+    /// this can still be refused, and a refusal must leave the previous turn's
+    /// events alone, because nothing has happened to replace them.
+    /// </summary>
+    private void BeginTurn() => turnEvents.Clear();
 
     private void EndTurn()
     {
@@ -382,6 +413,8 @@ public sealed class Run
 
         AttackResult result = CombatResolver.Resolve(archer.EffectivePower, Player);
         Log.Add($"{Capitalise(archer.Name)} shoots you for {result.Damage}.", MessageKind.Bad);
+        turnEvents.Add(new TurnEvent(TurnEventKind.Shot, archer.Position));
+        turnEvents.Add(new TurnEvent(TurnEventKind.Hit, Player.Position, result.Damage, AgainstPlayer: true));
         return true;
     }
 
@@ -390,6 +423,14 @@ public sealed class Run
         AttackResult result = CombatResolver.Resolve(monster.EffectivePower, Player);
         string name = monster.IsEnraged ? $"{monster.Name}, enraged," : monster.Name;
         Log.Add(CombatResolver.Describe(name, "you", result, attackerIsPlayer: false), MessageKind.Bad);
+
+        turnEvents.Add(new TurnEvent(
+            result.Hit ? TurnEventKind.Hit : TurnEventKind.Blocked,
+            Player.Position,
+            result.Damage,
+            AgainstPlayer: true));
+
+        if (!Player.IsAlive) turnEvents.Add(new TurnEvent(TurnEventKind.Death, Player.Position, AgainstPlayer: true));
     }
 
     private void Wander(Monster monster)

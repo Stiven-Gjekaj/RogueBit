@@ -7,4 +7,10 @@
     <RootNamespace>RogueBit.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- A test builds a map directly, so that it can state the arena it needs
+         rather than generating one and hoping something useful is nearby. -->
+    <InternalsVisibleTo Include="RogueBit.Core.Tests" />
+  </ItemGroup>
+
 </Project>
