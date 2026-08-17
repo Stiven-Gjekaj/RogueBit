@@ -73,24 +73,52 @@ jobs:
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
           echo "Cutting v$version"
 
-      - name: Refuse to tag a commit whose checks are not green
+      - name: Wait for this commit's checks, then refuse if any of them failed
         if: ${{ !inputs.force }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          # Ask for this commit's check runs, and fail on anything not passing.
-          # A tag on a red commit is a release nobody can trust.
-          runs=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
-                   --jq '.check_runs[] | select(.name != "create the tag") | "\(.name)=\(.status):\(.conclusion)"')
+          # This job starts on the same push that starts ci, so the checks are
+          # normally still running when it gets here. Waiting rather than
+          # failing is what makes the ordinary route work: writing a version
+          # into .github/release-version and pushing it.
+          #
+          # A tag on a red commit is a release nobody can trust, so a real
+          # failure still stops the run.
+          deadline=$(( SECONDS + 1800 ))
 
-          echo "$runs"
+          while true; do
+            runs=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+                     --paginate --jq '.check_runs[]
+                       | select(.name != "create the tag")
+                       | select(.name != "build the release")
+                       | "\(.name)=\(.status):\(.conclusion)"')
 
-          if echo "$runs" | grep -qvE '=completed:(success|skipped|neutral)$'; then
-            echo "Not every check on this commit has passed. Re-run with force if that is on purpose." >&2
-            exit 1
-          fi
+            if [ -z "$runs" ]; then
+              echo "No checks reported for this commit yet, waiting."
+            else
+              echo "$runs"
+
+              if echo "$runs" | grep -qE '=completed:(failure|cancelled|timed_out|action_required)$'; then
+                echo "A check on this commit failed. Re-run with force if that is on purpose." >&2
+                exit 1
+              fi
+
+              if ! echo "$runs" | grep -qv '=completed:'; then
+                echo "Every check on this commit has finished and none failed."
+                break
+              fi
+            fi
+
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "The checks on this commit did not finish within thirty minutes." >&2
+              exit 1
+            fi
+
+            sleep 20
+          done
 
       - name: Refuse to move a tag that already exists
         run: |
