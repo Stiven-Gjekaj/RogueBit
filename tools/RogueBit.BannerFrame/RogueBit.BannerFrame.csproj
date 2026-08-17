@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Captures the dungeon that appears in assets/banner.svg. This is a
+       developer tool and is not part of the game, so it ships with nothing. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RogueBit.BannerFrame</RootNamespace>
+    <AssemblyName>RogueBit.BannerFrame</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/RogueBit.Core/RogueBit.Core.csproj" />
+  </ItemGroup>
+
+</Project>
