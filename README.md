@@ -7,7 +7,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-196_passing-427819?style=for-the-badge" alt="196 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-222_passing-427819?style=for-the-badge" alt="222 tests passing"/>
 </p>
 
 <p align="center">
@@ -137,6 +137,8 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
 - **Depth that costs something.** Monsters grow in number and strength as you
   descend while potions grow scarcer, and the harder kinds only unlock deeper
   down, so the first floor is always goblins.
+- **An ending.** Floor ten has no stairs and a warden twice the size of the one
+  halfway down. Killing it wins the run and is worth far more than surviving.
 - **Equipment.** A weapon slot and an armour slot, both reading straight through
   to the numbers combat uses.
 - **A message log** that counts a repeated line rather than letting a run of
@@ -176,7 +178,8 @@ tests/                  xUnit against the core, run headless in CI
 ## Status
 
 Alpha. The game is playable from the first floor down for as long as you last,
-and the core is covered by 196 tests. Runs can be saved and resumed.
+and the core is covered by 222 tests. Runs can be saved and resumed, and a run
+that reaches the bottom can be won.
 
 ## Licence
 

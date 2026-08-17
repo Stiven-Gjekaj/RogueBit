@@ -51,6 +51,10 @@ The first version that builds. Everything before this point is kept on the
   `--no-effects` switches all of it off.
 - **Continuous integration** that tests the core on Linux and compiles the whole
   solution on Linux, Windows and macOS.
+- **An ending.** Floor ten has no stairs down and holds a warden twice the size
+  of the one halfway. Killing it wins the run. The monsters do not take their
+  turn after the winning blow, so one of them cannot kill a player who has
+  already finished.
 - **A release cut from a file.** Writing a version into `.github/release-version`
   tags the commit and builds a draft release, after checking the version against
   the project, the changelog and the commit's own checks.
@@ -68,3 +72,9 @@ These are defects carried over from the version that never compiled.
   and it said a killing blow "kills it" when the player was the one who died.
 - **A seed that is not a number is reported.** The old build dropped one in
   silence and handed the player a different dungeon with no explanation.
+- **The game starts at all.** `SadConsole.Host.MonoGame` references
+  `MonoGame.Framework` but does not carry it. The reference satisfied the
+  compiler, so the build was green while the published binaries had no such
+  assembly, and starting the game threw before a window appeared. Continuous
+  integration could not catch it, because it compiles the frontend and cannot
+  run it.
