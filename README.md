@@ -162,7 +162,10 @@ src/RogueBit.Core/      The rules. No rendering dependency of any kind.
   Items/                Items, the pack and the two slots
   Combat/               What one attack does
 src/RogueBit.Console/   The SadConsole window. Draws the core, holds no rules.
-tests/                  xUnit against the core, run headless in CI
+tests/RogueBit.Core.Tests/      The rules, run headless in CI
+tests/RogueBit.Console.Tests/   The effects, which decide without drawing
+tools/RogueBit.BannerFrame/     Captures the dungeon used in the banner
+scripts/                Builds assets/banner.svg from that capture
 ```
 
 ---
@@ -177,9 +180,10 @@ tests/                  xUnit against the core, run headless in CI
 
 ## Status
 
-Alpha. The game is playable from the first floor down for as long as you last,
-and the core is covered by 222 tests. Runs can be saved and resumed, and a run
-that reaches the bottom can be won.
+Alpha. The game is playable from the first floor to the warden at the bottom.
+222 tests cover it: 206 against the rules and 16 against the effects the
+frontend draws. The window itself is compiled on three platforms but never run
+by continuous integration, because it needs a display.
 
 ## Licence
 
