@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/banner.svg" alt="RogueBit. A turn-based ASCII roguelike where the same seed always plays the same run. A dungeon floor of rooms and corridors, with the player beside two goblins and a coin, next to a status panel showing health, score, floor, turn and seed." width="100%">
+
 # RogueBit
 
 ### A turn-based ASCII roguelike where the same seed always plays the same run
