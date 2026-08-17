@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The rules of the game. This project must never take a rendering
+       dependency. That is what keeps a run reproducible and testable with no
+       display attached. -->
+  <PropertyGroup>
+    <RootNamespace>RogueBit.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

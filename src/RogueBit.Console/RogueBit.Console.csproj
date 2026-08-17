@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RogueBit.Console</RootNamespace>
+    <AssemblyName>RogueBit</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SadConsole.Host.MonoGame" Version="10.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../RogueBit.Core/RogueBit.Core.csproj" />
+  </ItemGroup>
+
+</Project>
