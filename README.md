@@ -1,0 +1,174 @@
+<div align="center">
+
+# RogueBit
+
+### A turn-based ASCII roguelike where the same seed always plays the same run
+
+_Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .NET 10_
+
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
+  <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
+  <img src="https://img.shields.io/badge/tests-157_passing-427819?style=for-the-badge" alt="157 tests passing"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Stiven-Gjekaj/RogueBit/actions/workflows/ci.yml"><img src="https://github.com/Stiven-Gjekaj/RogueBit/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://github.com/Stiven-Gjekaj/RogueBit/releases"><img src="https://img.shields.io/github/v/release/Stiven-Gjekaj/RogueBit?include_prereleases&style=flat-square&color=orange&label=pre-release" alt="The latest pre-release"/></a>
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License"/>
+</p>
+
+<p align="center">
+  <a href="#quick-start"><b>Quick Start</b></a> |
+  <a href="#controls"><b>Controls</b></a> |
+  <a href="#what-is-in-here"><b>Features</b></a> |
+  <a href="#why-this-exists"><b>Why</b></a> |
+  <a href="#project-structure"><b>Structure</b></a> |
+  <a href="#documentation"><b>Docs</b></a>
+</p>
+
+</div>
+
+---
+
+## Sample output
+
+Seed 31337, twenty six turns in. Lit ground is `.`, ground the player has seen
+before and now remembers is `,`, and ground never visited is blank.
+
+```
+   ###################### #########
+   #,,,,,,,,,##,,,,,,,,,# #.......#
+   #,,,,,,,,,##,,,,,,,..###.......#
+   #,,,,,,,,,##,,,,,,,,,..........#
+   #,,,,,,,,,##,,,,,,,,,###.......####.
+   #,,,,,,,,,,,,,,,,,,,,# #...@.........
+   #,,,,,,,,,############ #.......####.
+   #,,,,,,,,,#            #.......#
+   #,,,,,,,,,#            #.......#
+   ###########            #########
+```
+
+This is captured from the running game rather than drawn by hand, which is why
+the light stops in the shapes it does.
+
+---
+
+## Why this exists
+
+**The same seed plays the same run, all the way down.** Every dice roll in the
+game comes from one source, and that source is created from the seed. Restarting
+builds a new source on the same seed rather than carrying on with the one that
+has already been drawn from, so `R` gives you the run you just lost and not a
+different one. A test plays four hundred turns twice and compares the floor, the
+score, the health and the turn count.
+
+**The algorithms are written out rather than called for.** Field of view is
+recursive shadowcasting across eight octants, pathfinding is A\* with a Manhattan
+heuristic, and the floors come from a binary space partition or a drunkard walk.
+None of that is a library call, and all of it is covered by tests that state the
+map they need in ASCII rather than asking a generator for one.
+
+**The rules do not know how to draw.** `RogueBit.Core` has no rendering
+dependency at all. A whole game can be played out in a test with no display
+attached, which is how the run above was captured. The SadConsole window reads
+what the core says is true and draws it.
+
+---
+
+## Quick Start
+
+Prerequisites: the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
+```sh
+git clone https://github.com/Stiven-Gjekaj/RogueBit
+cd RogueBit
+dotnet run --project src/RogueBit.Console
+```
+
+To play a dungeon you can come back to:
+
+```sh
+dotnet run --project src/RogueBit.Console -- --seed 31337
+```
+
+| Option | What it does |
+| --- | --- |
+| `--seed <number>` | Plays a named dungeon. The same seed replays the same run. |
+| `--colour-blind` | Uses a palette that does not rely on red against green. |
+| `--help` | Prints the options and exits. |
+
+Run the tests with `dotnet test`.
+
+---
+
+## Controls
+
+| Keys | Action |
+| --- | --- |
+| Arrows, WASD, hjkl, numpad | Move, or attack whatever you walk into |
+| `.` or numpad 5 | Wait a turn |
+| `g` | Pick up what is under you |
+| `,` | Go down the stairs you are standing on |
+| `i` | Open the pack, then a letter to use an item |
+| `r` | Start the same seed again |
+| `Escape` | Leave |
+
+Coins are taken by walking over them. Everything else has to be picked up.
+
+---
+
+## What is in here
+
+- **Two dungeon generators.** Odd floors are rooms and corridors from a binary
+  space partition. Even floors are caves from a drunkard walk. Both are checked
+  against the same contract over forty seeds.
+- **Field of view with memory.** Recursive shadowcasting, with ground you have
+  seen staying on the map dimmed once you walk away from it.
+- **Four kinds of monster.** Goblins chase. Jackals take two steps for each of
+  yours. Archers keep their distance and shoot along a clear line. A warden
+  stands on every fifth floor and hits twice as hard once it is below half
+  health.
+- **Depth that costs something.** Monsters grow in number and strength as you
+  descend while potions grow scarcer, and the harder kinds only unlock deeper
+  down, so the first floor is always goblins.
+- **Equipment.** A weapon slot and an armour slot, both reading straight through
+  to the numbers combat uses.
+- **A message log** that counts a repeated line rather than letting a run of
+  misses push everything else off the panel.
+
+---
+
+## Project structure
+
+```
+src/RogueBit.Core/      The rules. No rendering dependency of any kind.
+  Map/                  Generators, regions, the map itself
+  Vision/               Shadowcasting and line of sight
+  Pathing/              A*
+  Entities/             Player, monsters, the actor they share
+  Items/                Items, the pack and the two slots
+  Combat/               What one attack does
+src/RogueBit.Console/   The SadConsole window. Draws the core, holds no rules.
+tests/                  xUnit against the core, run headless in CI
+```
+
+---
+
+## Documentation
+
+- [Architecture and algorithms](docs/architecture.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+
+---
+
+## Status
+
+Alpha. The game is playable from the first floor down for as long as you last,
+and the core is covered by 157 tests. Saving a run in progress is not
+written yet.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
