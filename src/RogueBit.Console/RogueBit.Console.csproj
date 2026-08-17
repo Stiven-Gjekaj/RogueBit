@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="SadConsole.Host.MonoGame" Version="10.10.1" />
+
+    <!-- The host package references MonoGame but does not bring it, so without
+         this line the game compiles and then cannot start: the runtime has no
+         MonoGame.Framework to load. The version has to match what the host was
+         built against. -->
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
   </ItemGroup>
 
   <ItemGroup>
