@@ -87,6 +87,10 @@ jobs:
           --self-contained true
           --output publish/${{ matrix.rid }}
 
+      - name: Check the output has everything the game needs to start
+        shell: bash
+        run: scripts/check-publish.sh publish/${{ matrix.rid }}
+
       - name: Archive
         shell: bash
         run: |

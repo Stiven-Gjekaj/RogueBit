@@ -63,3 +63,25 @@ jobs:
 
       - name: Build the whole solution
         run: dotnet build --configuration Release
+
+  publish:
+    name: check a published build can start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish
+        run: >
+          dotnet publish src/RogueBit.Console/RogueBit.Console.csproj
+          --configuration Release --runtime linux-x64 --self-contained true
+          --output publish
+
+      # Compiling proves the references resolve. It does not prove the assembly
+      # is in the output, and one of them was not.
+      - name: Check the output has everything the game needs to start
+        run: scripts/check-publish.sh publish
