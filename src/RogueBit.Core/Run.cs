@@ -51,7 +51,11 @@ public sealed class Run
     /// <summary>How many turns the player has taken in this run.</summary>
     public int Turns { get; private set; }
 
-    public bool IsOver => !Player.IsAlive;
+    /// <summary>True when the deep warden is dead and the run was won.</summary>
+    public bool HasWon { get; private set; }
+
+    /// <summary>True when the run has ended, whichever way it ended.</summary>
+    public bool IsOver => !Player.IsAlive || HasWon;
 
     public IReadOnlyList<Monster> Monsters => monsters;
 
@@ -63,8 +67,11 @@ public sealed class Run
     /// </summary>
     public IReadOnlyList<TurnEvent> LastTurnEvents => turnEvents;
 
-    /// <summary>The score, which is coins gathered plus a bonus for depth.</summary>
-    public int Score => Player.Coins + ((Depth - 1) * 10);
+    /// <summary>
+    /// The score: coins gathered, a bonus for every floor descended, and a
+    /// large one for reaching the bottom and killing what lives there.
+    /// </summary>
+    public int Score => Player.Coins + ((Depth - 1) * 10) + (HasWon ? GameRules.VictoryBonus : 0);
 
     public Run(int seed)
     {
@@ -238,6 +245,12 @@ public sealed class Run
     {
         if (IsOver) return ActionResult.Refused;
 
+        if (GameRules.IsFinalDepth(Depth))
+        {
+            Log.Add("Nothing goes deeper than this. The warden is down here with you.", MessageKind.Warning);
+            return ActionResult.Refused;
+        }
+
         if (Map[Player.Position] != TileKind.StairsDown)
         {
             Log.Add("There are no stairs here.");
@@ -263,6 +276,9 @@ public sealed class Run
 
         Map = generator.Generate(MapWidth, MapHeight, Random);
         Player.Position = Map.Entrance;
+
+        // The bottom floor has nowhere to go on to, so its stairs are filled in.
+        if (GameRules.IsFinalDepth(depth)) Map[Map.StairsDown] = TileKind.Floor;
 
         monsters.Clear();
         items.Clear();
@@ -325,6 +341,12 @@ public sealed class Run
         turnEvents.Add(new TurnEvent(TurnEventKind.Death, monster.Position));
         Player.TakeCoins(monster.CoinReward);
         monsters.Remove(monster);
+
+        if (monster.Behaviour == MonsterBehaviour.Boss && GameRules.IsFinalDepth(Depth))
+        {
+            HasWon = true;
+            Log.Add($"{Capitalise(monster.Name)} falls. You have reached the bottom and lived.", MessageKind.Good);
+        }
     }
 
     private void TakeCoinsUnderfoot()
@@ -359,12 +381,20 @@ public sealed class Run
     private void EndTurn()
     {
         Turns++;
-        MonstersAct();
+
+        // A run that has just been won is over. Letting the monsters take one
+        // more turn here would let them kill a player who has already finished.
+        if (!HasWon) MonstersAct();
+
         UpdateVision();
 
         if (!Player.IsAlive)
         {
             Log.Add($"You die on floor {Depth}, with {Score} points.", MessageKind.Bad);
+        }
+        else if (HasWon)
+        {
+            Log.Add($"You win, on turn {Turns}, with {Score} points.", MessageKind.Good);
         }
     }
 

@@ -279,7 +279,8 @@ public sealed class GameScreen : SadConsole.Console
         Player player = run.Player;
 
         string health = $"HP {player.Health}/{player.MaxHealth}";
-        string rest = $"  Score {run.Score}   Floor {run.Depth}   Turn {run.Turns}   Seed {run.Seed}";
+        string floor = GameRules.IsFinalDepth(run.Depth) ? $"{run.Depth} (the bottom)" : run.Depth.ToString();
+        string rest = $"  Score {run.Score}   Floor {floor}   Turn {run.Turns}   Seed {run.Seed}";
         string gear = run.Inventory.Weapon is { } weapon ? $"   {weapon.Name}" : string.Empty;
 
         Color healthColour = player.Health * 3 <= player.MaxHealth ? theme.Bad
@@ -332,23 +333,29 @@ public sealed class GameScreen : SadConsole.Console
 
     private void DrawGameOver()
     {
+        string headline = run.HasWon ? "You reached the bottom and lived." : "You died.";
+
         string[] lines =
         [
-            "You died.",
+            headline,
             $"Floor {run.Depth}, {run.Turns} turns, {run.Score} points.",
             $"Best so far {saves.ReadBestScore()}.",
             "R to play the same seed again, Escape to leave.",
         ];
 
+        // Green for a win, red for a death, so the ending reads before the words do.
+        Color panel = run.HasWon ? new Color(14, 44, 26) : new Color(48, 16, 16);
+        Color accent = run.HasWon ? theme.Good : theme.Bad;
+
         int width = lines.Max(l => l.Length) + 6;
         int left = (ScreenWidth - width) / 2;
         int top = (Run.MapHeight / 2) - 2;
 
-        this.Fill(new Area(left, top, width, lines.Length + 4), theme.Text, new Color(48, 16, 16), 0);
+        this.Fill(new Area(left, top, width, lines.Length + 4), theme.Text, panel, 0);
 
         for (int i = 0; i < lines.Length; i++)
         {
-            this.Print(left + 3, top + 2 + i, lines[i], i == 0 ? theme.Bad : theme.Text, new Color(48, 16, 16));
+            this.Print(left + 3, top + 2 + i, lines[i], i == 0 ? accent : theme.Text, panel);
         }
     }
 }

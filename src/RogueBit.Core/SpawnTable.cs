@@ -25,7 +25,7 @@ public static class SpawnTable
     public static int PotionCount(int depth) => Math.Max(1, 5 - (depth / 3));
 
     /// <summary>True when this floor holds a boss.</summary>
-    public static bool HasBoss(int depth) => depth % 5 == 0;
+    public static bool HasBoss(int depth) => depth % 5 == 0 || GameRules.IsFinalDepth(depth);
 
     /// <summary>Builds one monster suited to the depth.</summary>
     public static Monster CreateMonster(Position position, int depth, SeededRandom random)
@@ -72,15 +72,26 @@ public static class SpawnTable
             CoinReward = 4,
         };
 
-    public static Monster Boss(Position position, int depth) =>
-        new(position, maxHealth: 25 + (depth * 4), power: 5 + depth, defence: 1 + (depth / 5))
+    public static Monster Boss(Position position, int depth)
+    {
+        bool last = GameRules.IsFinalDepth(depth);
+
+        return new Monster(
+            position,
+            maxHealth: (25 + (depth * 4)) * (last ? 2 : 1),
+            power: 5 + depth,
+            defence: 1 + (depth / 5))
         {
             Glyph = 'B',
-            Name = "the warden",
+
+            // The one at the bottom is named apart, so a player meeting it
+            // knows the run is nearly over rather than merely hard.
+            Name = last ? "the deep warden" : "the warden",
             Behaviour = MonsterBehaviour.Boss,
             AggroRadius = 14,
-            CoinReward = 25 + (depth * 5),
+            CoinReward = (25 + (depth * 5)) * (last ? 2 : 1),
         };
+    }
 
     /// <summary>Builds one piece of equipment suited to the depth, or nothing.</summary>
     public static Item? CreateEquipment(Position position, int depth, SeededRandom random)
