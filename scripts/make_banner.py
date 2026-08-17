@@ -5,25 +5,31 @@
 
 The dungeon in the banner is not drawn by hand. assets/banner-frame.json is a
 viewport captured from a game the code actually played: seed 7, turn 151, on
-the first floor. Every colour here is copied from src/RogueBit.Console/Theme.cs,
-so the banner and the running game cannot disagree about what a goblin looks
-like.
+the first floor. Recapture it with
+
+    dotnet run --project tools/RogueBit.BannerFrame -- --seed 7
+
+Every colour here is copied from src/RogueBit.Console/Theme.cs, so the banner
+and the running game cannot disagree about what a goblin looks like.
 
 Two things keep it safe to put in a README. The font is subsetted and embedded
 as a data URI, because an SVG inside an img tag cannot fetch anything. And every
 run of glyphs carries a textLength, so the grid holds its alignment even if the
 embedded font somehow fails to apply and a fallback is used instead.
 
-Needs fonttools and brotli:  pip install fonttools brotli
+The subsetted font is committed as assets/banner-font.woff2 and read from there.
+It is not rebuilt on every run, because the woff2 encoder does not produce the
+same bytes twice for the same input, which made every rebuild of the banner a
+spurious diff. Rebuild the font only when the text in the banner needs a
+character the subset does not have:
+
+    python3 scripts/make_banner.py --refresh-font    # needs fonttools and brotli
 """
 
 import base64
-import io
 import json
 import pathlib
-
-from fontTools.subset import Subsetter, Options
-from fontTools.ttLib import TTFont
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 STATE = json.loads((ROOT / "assets" / "banner-frame.json").read_text())
@@ -86,8 +92,17 @@ ADVANCE = FONT_SIZE * 1233 / 2048      # DejaVu Sans Mono advance, in em units
 TRACKING = CELL_W - ADVANCE
 
 # -------------------------------------------------------------------- font ---
-def embedded_font() -> str:
-    """Subsets DejaVu Sans Mono to the characters the banner uses."""
+SOURCE_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+
+# What the committed subset covers. Rebuilding the font rewrites this list.
+FONT_COVERS = (
+    " !\"#$'()*+,-./0123456789:>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_"
+    "abcdefghijklmnopqrstuvwxyz\u00b7\u2026"
+)
+
+
+def characters_used() -> set[str]:
+    """Every character the banner draws."""
     used = set(" ")
     for row in STATE["rows"]:
         used |= set(row)
@@ -95,27 +110,53 @@ def embedded_font() -> str:
     for line in meta["log"]:
         used |= set(line["text"])
     used |= set("HP SCORE FLOOR TURN SEED abcdefghijklmnopqrstuvwxyz")
-    used |= set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./-_:$#@!>,()+*'\"[]")
+    used |= set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./-_:$#@!>,()+*'\"[]\u2026\u00b7")
+    return used
 
-    font = TTFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf")
+
+def refresh_font(path: pathlib.Path) -> None:
+    """Rebuilds the committed subset. Needs fonttools and brotli installed."""
+    from fontTools.subset import Options, Subsetter
+    from fontTools.ttLib import TTFont
+
+    font = TTFont(SOURCE_FONT)
     options = Options()
     options.layout_features = []
     options.desubroutinize = True
     options.drop_tables += ["DSIG"]
     subsetter = Subsetter(options=options)
-    subsetter.populate(text="".join(sorted(used)))
+    subsetter.populate(text="".join(sorted(characters_used())))
     subsetter.subset(font)
 
-    # fontTools stamps the save time into head, which makes every build produce
-    # a different byte string for the same input. Pin it, so regenerating the
-    # banner from the same frame gives the same file.
+    # Pinning the timestamps removes one source of drift. It does not remove
+    # them all, which is why the result is committed rather than rebuilt.
     font["head"].created = 0
     font["head"].modified = 0
 
-    buffer = io.BytesIO()
     font.flavor = "woff2"
-    font.save(buffer)
-    return base64.b64encode(buffer.getvalue()).decode("ascii")
+    font.save(str(path))
+    print(f"rebuilt {path} ({path.stat().st_size / 1024:.1f} KB)")
+
+
+def embedded_font() -> str:
+    """Reads the committed subset and returns it base64 encoded."""
+    path = ROOT / "assets" / "banner-font.woff2"
+
+    if not path.exists():
+        raise SystemExit(
+            f"{path} is missing. Rebuild it with:\n"
+            f"    python3 scripts/make_banner.py --refresh-font"
+        )
+
+    missing = {c for c in characters_used() if c.strip()} - set(FONT_COVERS)
+    if missing:
+        raise SystemExit(
+            "The committed font subset has no glyph for: "
+            + " ".join(sorted(missing))
+            + "\nRebuild it with: python3 scripts/make_banner.py --refresh-font"
+        )
+
+    return base64.b64encode(path.read_bytes()).decode("ascii")
 
 
 # ---------------------------------------------------------------- wordmark ---
@@ -398,6 +439,9 @@ def build() -> str:
 
 
 if __name__ == "__main__":
+    if "--refresh-font" in sys.argv:
+        refresh_font(ROOT / "assets" / "banner-font.woff2")
+
     svg = build()
     out = ROOT / "assets" / "banner.svg"
     out.write_text(svg)
