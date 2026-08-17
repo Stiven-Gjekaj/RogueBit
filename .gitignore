@@ -1,0 +1,26 @@
+# Build output
+# The .NET SDK writes these on every restore and build.
+# They are rebuilt from source, so they do not belong in the repository.
+bin/
+obj/
+
+# Test and coverage output
+TestResults/
+*.coverage
+*.trx
+coverage.cobertura.xml
+
+# Packages built for release
+*.nupkg
+*.snupkg
+
+# Editor and tool state
+# These hold local settings, and each person sets them differently.
+.vs/
+.idea/
+*.user
+*.suo
+
+# Operating system files
+.DS_Store
+Thumbs.db
