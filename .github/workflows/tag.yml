@@ -1,0 +1,120 @@
+name: tag
+
+# Creates a release tag, and then builds the release from it.
+#
+# Two ways in. Writing a version into .github/release-version and pushing to
+# main cuts that release, which is the ordinary route and needs nothing beyond a
+# push. Dispatching by hand does the same and adds a force switch, for the times
+# when a guard is in the way on purpose.
+#
+# The tag is pushed with the default GITHUB_TOKEN, which does not start another
+# workflow. release.yml is therefore called directly rather than waiting for a
+# tag event that would never arrive.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag, for example 0.1.0-alpha. Empty reads .github/release-version."
+        required: false
+        type: string
+      force:
+        description: "Skip the green-checks guard"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [main]
+    paths: [".github/release-version"]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  tag:
+    name: create the tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.decide.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out which version to cut
+        id: decide
+        run: |
+          set -euo pipefail
+
+          version="${{ inputs.version }}"
+          if [ -z "$version" ]; then
+            # The first line that is neither blank nor a comment.
+            version=$(grep -vE '^\s*(#|$)' .github/release-version | head -1 | tr -d '[:space:]')
+          fi
+
+          if [ -z "$version" ]; then
+            echo "No version given and none found in .github/release-version" >&2
+            exit 1
+          fi
+
+          packaged=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)
+          if [ "$version" != "$packaged" ]; then
+            echo "release-version says $version but Directory.Build.props says $packaged" >&2
+            echo "The last commit of a series has to bump both." >&2
+            exit 1
+          fi
+
+          if ! grep -q "^## $version\$" CHANGELOG.md; then
+            echo "CHANGELOG.md has no '## $version' section to release" >&2
+            exit 1
+          fi
+
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Cutting v$version"
+
+      - name: Refuse to tag a commit whose checks are not green
+        if: ${{ !inputs.force }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Ask for this commit's check runs, and fail on anything not passing.
+          # A tag on a red commit is a release nobody can trust.
+          runs=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+                   --jq '.check_runs[] | select(.name != "create the tag") | "\(.name)=\(.status):\(.conclusion)"')
+
+          echo "$runs"
+
+          if echo "$runs" | grep -qvE '=completed:(success|skipped|neutral)$'; then
+            echo "Not every check on this commit has passed. Re-run with force if that is on purpose." >&2
+            exit 1
+          fi
+
+      - name: Refuse to move a tag that already exists
+        run: |
+          set -euo pipefail
+          tag="${{ steps.decide.outputs.tag }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "$tag already exists. A released version is not re-cut." >&2
+            exit 1
+          fi
+
+      - name: Tag
+        run: |
+          set -euo pipefail
+          tag="${{ steps.decide.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "RogueBit $tag"
+          git push origin "refs/tags/$tag"
+
+  release:
+    name: build the release
+    needs: tag
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    permissions:
+      contents: write

@@ -1,0 +1,12 @@
+# The version to release. Writing a new one here and pushing to main is what
+# cuts a release: tag.yml watches this file, checks that ci is green for the
+# commit, tags it, and calls release.yml to build the draft.
+#
+# It has to match <Version> in Directory.Build.props at the commit that changes
+# it, so the last commit of a series bumps both. Between releases this names the
+# last one cut, which is normally behind the version being worked on.
+#
+# Blank lines and lines starting with # are ignored. The first line that is
+# neither is the version.
+
+0.1.0-alpha
