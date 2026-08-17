@@ -1,0 +1,151 @@
+# Architecture and algorithms
+
+This file says how RogueBit is put together and why each algorithm was chosen.
+It is written for somebody who wants to change the game and needs to know what
+will break.
+
+## The one rule
+
+`RogueBit.Core` takes no rendering dependency. Not SadConsole, not MonoGame, not
+a colour type.
+
+Three things follow from that, and all three are the reason for the rule.
+
+1. **A run is reproducible.** Every dice roll comes from one `SeededRandom`, and
+   that object is built from the seed. Nothing else in the core calls `Random`.
+2. **The game is testable with no display.** The whole of a run can be played out
+   in a test. The screenshot in the README was captured that way.
+3. **The frontend cannot drift.** It holds no rules, so there is no second copy
+   of a rule to fall out of step with the first.
+
+If a change needs the core to know something about drawing, the change belongs
+in the frontend.
+
+## Determinism
+
+`SeededRandom` wraps one `Random` and exposes `Restart()`, which returns a new
+source on the same seed.
+
+That method exists because of a specific defect. The version before this one
+kept a single generator alive across restarts, so pressing `R` carried on
+drawing from a generator that had already produced a dungeon. The same seed gave
+a different map, while the README claimed otherwise.
+
+`RunTests.TheSameSeedPlaysOutIdenticallyForAWholeRun` plays four hundred turns
+twice and compares the floor, the score, the health and the turn count.
+
+## Dungeon generation
+
+Both generators satisfy one contract, checked over forty seeds in
+`DungeonGeneratorContractTests`:
+
+- exactly one walkable region, so no floor can strand the player
+- a wall all the way round the edge
+- an entrance and stairs, both on walkable ground
+- the same floor from the same seed, and a different floor from a different one
+
+### Binary space partition, odd floors
+
+The floor is cut in two over and over until each block is too small to cut
+again. Each leaf gets a room, and **each split joins the rooms of its two halves
+before it returns**.
+
+That last point is the whole design. Joining at every split makes the result
+connected by construction. The common alternative, carving all the rooms and
+then joining them in a list, leaves the connectivity to a second pass that has
+to be right on its own.
+
+### Drunkard walk, even floors
+
+A digger walks at random and carves whatever it stands on, until it has carved
+the coverage asked for.
+
+When the digger reaches the edge it **jumps back to a cell it has already
+carved** rather than being clamped against the wall. Clamping was what the old
+code did, and it presses the cave flat along the edges, because a digger that
+keeps trying to leave spends all its time on the boundary.
+
+A cave has no rooms, so the stairs go at the walkable cell furthest from the
+entrance, found by breadth-first search. That is what makes the floor worth
+crossing.
+
+### Connectivity
+
+`MapRegions.Find` groups walkable cells into regions by cardinal steps.
+`ConnectAll` repeatedly joins the two largest regions with an L shaped corridor
+until one is left.
+
+Cardinal and not diagonal is deliberate: the player moves in four directions, so
+two floors touching only at a corner are genuinely two regions, and
+`DoesNotJoinTwoFloorsThatOnlyTouchAtACorner` says so.
+
+## Field of view
+
+Recursive shadowcasting across eight octants. Each octant is scanned row by row
+outwards, carrying the slopes of its left and right edge. A wall narrows that
+wedge: the scan recurses into the part still lit and abandons the part behind
+the wall.
+
+**This is not what the previous version did.** That code cast a Bresenham ray
+from the player at every cell within the radius and called it "shadowcasting
+style". The two differ in ways that matter:
+
+- Ray casting visits the cells near the viewer once per ray. Shadowcasting
+  touches each cell at most once per octant.
+- Ray casting leaves holes in a diagonal wall, because no ray happens to land on
+  some of its cells.
+
+One detail is worth knowing before you touch `Scan`. The scan runs outwards
+along the **negative** axis, so `deltaY` is `-distance`. Getting that sign wrong
+mirrors every octant and puts the shadows on the wrong side of their walls. It
+was wrong in the first draft, and five tests caught it.
+
+## Pathfinding
+
+A\* with a Manhattan heuristic over four directions. Manhattan never overstates
+the true cost on that grid, which is what keeps the result a shortest path
+rather than merely a short one.
+
+`Find` takes an optional blocking test as well as the map, because a monster has
+to path round the other monsters and not only round the walls. **The goal is
+exempt from that test.** Without the exemption a monster could never path onto
+the player, because the player blocks its own cell, and nothing would ever reach
+you.
+
+## Turn order
+
+One player action advances the whole world:
+
+1. The player moves, attacks, waits, picks something up, uses something or
+   descends.
+2. Every living monster acts, a swift one twice.
+3. Field of view is recomputed.
+4. If the player is dead, the run ends.
+
+A move into a wall is refused and **costs no turn**. A misread key should not
+kill anybody.
+
+## Combat
+
+Damage is the attacker's power less the defender's defence, floored at nothing,
+so armour can never turn an attack into healing.
+
+Equipment bonuses are added by the actor, in `Player.Power` and
+`Player.Defence`, rather than being held beside it. That is a correction of a
+defect: the pack used to sit next to the player, so combat asked the actor for
+its defence and never saw the armour, and every piece of armour in the game did
+nothing. `EquipmentReachesCombatTests` pins the bonus to the number combat
+actually reads.
+
+## Testing
+
+`MapBuilder` builds a map from ASCII inside a test, and renders one back so a
+failure prints something readable.
+
+Tests state the map they need rather than asking a generator for one. A
+generator is a set of choices its author changes; a test that leans on one fails
+the day a choice moves, for no reason connected to the thing under test.
+
+The habit that matters: **when you add a test, break the thing it covers on
+purpose and watch it fail.** That catches a test that asserts nothing and a test
+that asserts the wrong thing, in one step.
