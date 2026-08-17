@@ -65,8 +65,30 @@ public class CombatResolverTests
     [Fact]
     public void DescribesAHitAKillAndABlowTurnedAside()
     {
-        Assert.Contains("for 3", CombatResolver.Describe("you", "the goblin", new AttackResult(3, false)));
-        Assert.Contains("kills it", CombatResolver.Describe("you", "the goblin", new AttackResult(3, true)));
-        Assert.Contains("turned aside", CombatResolver.Describe("you", "the goblin", new AttackResult(0, false)));
+        Assert.Contains("for 3", CombatResolver.Describe("you", "a goblin", new AttackResult(3, false), true));
+        Assert.Contains("kill it", CombatResolver.Describe("you", "a goblin", new AttackResult(3, true), true));
+        Assert.Contains("turned aside", CombatResolver.Describe("you", "a goblin", new AttackResult(0, false), true));
+    }
+
+    [Fact]
+    public void TheVerbAgreesWithWhoIsSwinging()
+    {
+        // "You hits a goblin" shipped in the first playable build.
+        Assert.StartsWith("You hit a goblin", CombatResolver.Describe("you", "a goblin", new AttackResult(3, false), true));
+        Assert.StartsWith("A goblin hits you", CombatResolver.Describe("a goblin", "you", new AttackResult(3, false), false));
+    }
+
+    [Fact]
+    public void AKillNamesWhoActuallyDied()
+    {
+        // "a jackal hits you for 2, and kills it" also shipped. The player died.
+        Assert.EndsWith("kills you", CombatResolver.Describe("a jackal", "you", new AttackResult(2, true), false));
+        Assert.EndsWith("kill it", CombatResolver.Describe("you", "a jackal", new AttackResult(2, true), true));
+    }
+
+    [Fact]
+    public void ASentenceOpensWithACapitalLetter()
+    {
+        Assert.StartsWith("A goblin", CombatResolver.Describe("a goblin", "you", new AttackResult(1, false), false));
     }
 }

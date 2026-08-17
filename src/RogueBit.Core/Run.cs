@@ -248,7 +248,9 @@ public sealed class Run
     private void AttackMonster(Monster monster)
     {
         AttackResult result = CombatResolver.Resolve(Player.Power, monster);
-        Log.Add(CombatResolver.Describe("You", monster.Name, result), result.Killed ? MessageKind.Good : MessageKind.Normal);
+        Log.Add(
+            CombatResolver.Describe("you", monster.Name, result, attackerIsPlayer: true),
+            result.Killed ? MessageKind.Good : MessageKind.Normal);
 
         if (!result.Killed) return;
 
@@ -334,7 +336,7 @@ public sealed class Run
         if (!Line.IsClear(Map, archer.Position, Player.Position)) return false;
 
         AttackResult result = CombatResolver.Resolve(archer.EffectivePower, Player);
-        Log.Add($"{archer.Name} shoots you for {result.Damage}.", MessageKind.Bad);
+        Log.Add($"{Capitalise(archer.Name)} shoots you for {result.Damage}.", MessageKind.Bad);
         return true;
     }
 
@@ -342,7 +344,7 @@ public sealed class Run
     {
         AttackResult result = CombatResolver.Resolve(monster.EffectivePower, Player);
         string name = monster.IsEnraged ? $"{monster.Name}, enraged," : monster.Name;
-        Log.Add(CombatResolver.Describe(name, "you", result), MessageKind.Bad);
+        Log.Add(CombatResolver.Describe(name, "you", result, attackerIsPlayer: false), MessageKind.Bad);
     }
 
     private void Wander(Monster monster)
@@ -353,4 +355,7 @@ public sealed class Run
     }
 
     private void UpdateVision() => FieldOfView.Compute(Map, Player.Position, VisionRadius);
+
+    private static string Capitalise(string text) =>
+        text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 }

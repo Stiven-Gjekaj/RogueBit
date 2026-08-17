@@ -26,13 +26,34 @@ public static class CombatResolver
         return new AttackResult(landed, !defender.IsAlive);
     }
 
-    /// <summary>Describes an attack in the words the log shows.</summary>
-    public static string Describe(string attacker, string defender, AttackResult result)
+    /// <summary>
+    /// Describes an attack in the words the log shows.
+    ///
+    /// The verb agrees with the attacker, because the player is addressed in
+    /// the second person and everything else in the third. The kill clause names
+    /// the target with a pronoun, so the sentence does not say the same noun
+    /// twice.
+    /// </summary>
+    public static string Describe(string attacker, string defender, AttackResult result, bool attackerIsPlayer)
     {
-        if (!result.Hit) return $"{attacker} hits {defender}, and the blow is turned aside";
+        ArgumentException.ThrowIfNullOrWhiteSpace(attacker);
+        ArgumentException.ThrowIfNullOrWhiteSpace(defender);
 
-        return result.Killed
-            ? $"{attacker} hits {defender} for {result.Damage}, and kills it"
-            : $"{attacker} hits {defender} for {result.Damage}";
+        string hits = attackerIsPlayer ? "hit" : "hits";
+
+        if (!result.Hit) return Capitalise($"{attacker} {hits} {defender}, and the blow is turned aside");
+
+        string sentence = $"{attacker} {hits} {defender} for {result.Damage}";
+
+        if (!result.Killed) return Capitalise(sentence);
+
+        string kills = attackerIsPlayer ? "kill" : "kills";
+        string target = defender.Equals("you", StringComparison.OrdinalIgnoreCase) ? "you" : "it";
+
+        return Capitalise($"{sentence}, and {kills} {target}");
     }
+
+    /// <summary>Raises the first letter, so a monster name can open a sentence.</summary>
+    private static string Capitalise(string sentence) =>
+        sentence.Length == 0 ? sentence : char.ToUpperInvariant(sentence[0]) + sentence[1..];
 }
