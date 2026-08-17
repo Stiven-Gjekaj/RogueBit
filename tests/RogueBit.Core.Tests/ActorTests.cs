@@ -127,6 +127,6 @@ public class ActorTests
         goblin.TakeDamage(5);
 
         Assert.False(goblin.IsEnraged);
-        Assert.Equal(goblin.Power, goblin.EffectivePower);
+        Assert.Equal(goblin.BasePower, goblin.EffectivePower);
     }
 }
