@@ -1,0 +1,143 @@
+name: release
+
+# Builds a self-contained executable for each platform and attaches them, with
+# one checksum file, to a GitHub release.
+#
+# workflow_dispatch is here so the whole build can be proven without creating a
+# tag. A tag is a public, permanent-looking thing to create by accident, and a
+# release workflow that can only be tested by tagging gets tested in production.
+# On a manual run with no tag everything runs except the step that publishes, so
+# the build, the checksums and the notes are all proven and the archives are
+# left as workflow artifacts.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release, or empty to build without publishing
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  verify:
+    name: verify the version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches the packaged version
+        if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag }}"
+          [ -n "$tag" ] || tag="${GITHUB_REF#refs/tags/}"
+          packaged=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)
+          if [ "$tag" != "v$packaged" ]; then
+            echo "tag $tag does not match the version $packaged in Directory.Build.props" >&2
+            exit 1
+          fi
+          echo "tag $tag matches the packaged version"
+
+  build:
+    name: build ${{ matrix.rid }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  rid: linux-x64 }
+          - { os: windows-latest, rid: win-x64 }
+          - { os: macos-latest,   rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Test the core before shipping it
+        run: dotnet test tests/RogueBit.Core.Tests/RogueBit.Core.Tests.csproj --configuration Release
+
+      - name: Publish
+        run: >
+          dotnet publish src/RogueBit.Console/RogueBit.Console.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          --output publish/${{ matrix.rid }}
+
+      - name: Archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p archives
+          cp README.md LICENSE publish/${{ matrix.rid }}/
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+            7z a "archives/RogueBit-${{ matrix.rid }}.zip" "./publish/${{ matrix.rid }}/*"
+          else
+            tar -czf "archives/RogueBit-${{ matrix.rid }}.tar.gz" -C "publish/${{ matrix.rid }}" .
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RogueBit-${{ matrix.rid }}
+          path: archives/*
+
+  publish:
+    name: publish the release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded
+
+      - name: Gather the archives and checksum them
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          find downloaded -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp {} release/ \;
+          cd release
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Take the notes for this version out of the changelog
+        id: notes
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag }}"
+          [ -n "$tag" ] || tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#v}"
+          # Print the section for this version, stopping at the next heading.
+          awk -v v="$version" '
+            $0 ~ "^## " v "([^0-9]|$)" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "No changelog section for $version" > notes.md
+          fi
+          cat notes.md
+
+      - name: Publish
+        if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          body_path: notes.md
+          files: release/*
+          draft: true
+          prerelease: true
