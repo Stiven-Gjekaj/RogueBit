@@ -1,0 +1,25 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# Test and coverage output
+TestResults/
+*.trx
+*.coverage
+coverage*.xml
+
+# NuGet
+*.nupkg
+packages/
+
+# Editor and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
