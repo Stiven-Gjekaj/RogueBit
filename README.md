@@ -9,7 +9,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-157_passing-427819?style=for-the-badge" alt="157 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-196_passing-427819?style=for-the-badge" alt="196 tests passing"/>
 </p>
 
 <p align="center">
@@ -56,12 +56,13 @@ the light stops in the shapes it does.
 
 ## Why this exists
 
-**The same seed plays the same run, all the way down.** Every dice roll in the
-game comes from one source, and that source is created from the seed. Restarting
-builds a new source on the same seed rather than carrying on with the one that
-has already been drawn from, so `R` gives you the run you just lost and not a
-different one. A test plays four hundred turns twice and compares the floor, the
-score, the health and the turn count.
+**The same seed plays the same run, all the way down, and will next year too.**
+The generator is PCG written out in the repository rather than
+`System.Random`, which does not promise the same sequence across runtime
+versions and has already changed once. A test pins the output for seed 12345 to
+fixed numbers, so drift becomes a failing build instead of a silent change of
+meaning. Restarting builds a fresh source on the same seed rather than carrying
+on with one already drawn from, so `R` gives you the run you just lost.
 
 **The algorithms are written out rather than called for.** Field of view is
 recursive shadowcasting across eight octants, pathfinding is A\* with a Manhattan
@@ -95,7 +96,9 @@ dotnet run --project src/RogueBit.Console -- --seed 31337
 | Option | What it does |
 | --- | --- |
 | `--seed <number>` | Plays a named dungeon. The same seed replays the same run. |
+| `--continue` | Picks up the saved run, if there is one. |
 | `--colour-blind` | Uses a palette that does not rely on red against green. |
+| `--no-effects` | Turns off the particles and the screen shake. |
 | `--help` | Prints the options and exits. |
 
 Run the tests with `dotnet test`.
@@ -111,10 +114,14 @@ Run the tests with `dotnet test`.
 | `g` | Pick up what is under you |
 | `,` | Go down the stairs you are standing on |
 | `i` | Open the pack, then a letter to use an item |
+| `s` | Save the run |
 | `r` | Start the same seed again |
-| `Escape` | Leave |
+| `Escape` | Save and leave |
 
 Coins are taken by walking over them. Everything else has to be picked up.
+
+Leaving with `Escape` writes the run, so `--continue` picks it up where you
+stopped. A run that ends is removed, so dying cannot be undone by loading.
 
 ---
 
@@ -136,6 +143,11 @@ Coins are taken by walking over them. Everything else has to be picked up.
   to the numbers combat uses.
 - **A message log** that counts a repeated line rather than letting a run of
   misses push everything else off the panel.
+- **Saving and resuming.** The floor, the pack, what you have explored and the
+  exact state of the dice all come back, so a resumed run plays on rather than
+  replaying the seed.
+- **Hit flashes, sparks and screen shake**, which the core knows nothing about
+  and `--no-effects` switches off entirely.
 
 ---
 
@@ -166,8 +178,7 @@ tests/                  xUnit against the core, run headless in CI
 ## Status
 
 Alpha. The game is playable from the first floor down for as long as you last,
-and the core is covered by 157 tests. Saving a run in progress is not
-written yet.
+and the core is covered by 196 tests. Runs can be saved and resumed.
 
 ## Licence
 

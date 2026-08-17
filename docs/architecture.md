@@ -23,13 +23,57 @@ in the frontend.
 
 ## Determinism
 
-`SeededRandom` wraps one `Random` and exposes `Restart()`, which returns a new
-source on the same seed.
+`SeededRandom` is PCG-XSH-RR, written out in this repository rather than taken
+from `System.Random`. Two reasons, both of which bite this particular game.
 
-That method exists because of a specific defect. The version before this one
-kept a single generator alive across restarts, so pressing `R` carried on
-drawing from a generator that had already produced a dungeon. The same seed gave
-a different map, while the README claimed otherwise.
+1. **`System.Random` does not promise the same sequence from the same seed
+   across runtime versions**, and its algorithm has already changed once. A
+   seed that replays a different dungeon next year is not a seed, and every
+   screenshot and shared seed would quietly come to mean something else.
+2. **Its state cannot be read out**, so a run could not be saved and resumed
+   without changing what the dice would do next.
+
+`SeededRandomTests.TheSequenceForASeedIsPinned` holds the output for seed 12345
+to fixed numbers. If that test fails, the change is breaking and needs a new
+major version, not a new set of expected values.
+
+`Restart()` returns a fresh source on the same seed. It exists because of a
+specific defect: the version before this one kept a single generator alive
+across restarts, so pressing `R` carried on drawing from a generator that had
+already produced a dungeon.
+
+`Snapshot()` and `Restore()` hand over the two state words, which is what lets a
+saved run carry on rather than start again.
+
+## Saving
+
+A save stores the floor as tiles, not as the seed it grew from. Regenerating
+would be smaller, but it would tie every save to the exact behaviour of the
+generator, and a save that stops loading because somebody tuned a generator was
+never really written down. Three kilobytes buys independence from that.
+
+The file is written beside the target and then moved over it, so a crash midway
+leaves the previous save whole rather than half of a new one. A load refuses a
+version it does not know, a damaged file, and a floor whose size does not match
+its own dimensions, because a save that cannot be trusted should not be played.
+
+A run that ends deletes its save. Otherwise loading is a way to undo dying.
+
+## Effects
+
+The core reports `TurnEvent` values: what happened, on which cell, how big it
+was, and whether the player was on the receiving end. It has no idea what any of
+that looks like.
+
+Everything visual lives in the frontend. A particle fades by moving toward the
+background colour rather than by alpha, because a console cell has nothing to be
+transparent against. The screen shakes only for a blow the player took, because
+shaking for every hit anywhere makes the whole game feel loose. `--no-effects`
+turns all of it off and changes nothing about how the game plays.
+
+The event list is cleared when an action is committed, not when one is
+requested. A refused move leaves the previous turn's events alone, because
+nothing has happened to replace them.
 
 `RunTests.TheSameSeedPlaysOutIdenticallyForAWholeRun` plays four hundred turns
 twice and compares the floor, the score, the health and the turn count.

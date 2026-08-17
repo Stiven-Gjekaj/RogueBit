@@ -37,8 +37,23 @@ The first version that builds. Everything before this point is kept on the
   misses push everything else off the panel.
 - **A colour-blind palette** and three movement layouts at once: arrows, WASD
   and hjkl.
+- **Saving and resuming a run.** The floor, the pack, what has been explored and
+  the exact state of the generator all come back, so a resumed run plays on
+  rather than replaying the seed. The file is written beside the target and
+  moved over it, so a crash midway cannot leave half a save. A run that ends is
+  removed, so dying cannot be undone by loading.
+- **A generator written out in the repository.** PCG-XSH-RR replaces
+  `System.Random`, which does not promise the same sequence from one seed across
+  runtime versions and has already changed once. A test pins the output for seed
+  12345, so drift is a failing build rather than a silent change of meaning.
+- **Hit flashes, sparks and screen shake.** The core reports what happened and
+  on which cell; the frontend decides entirely what that looks like, and
+  `--no-effects` switches all of it off.
 - **Continuous integration** that tests the core on Linux and compiles the whole
   solution on Linux, Windows and macOS.
+- **A release cut from a file.** Writing a version into `.github/release-version`
+  tags the commit and builds a draft release, after checking the version against
+  the project, the changelog and the commit's own checks.
 
 ### Fixed
 
