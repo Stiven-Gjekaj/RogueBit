@@ -4,6 +4,7 @@
     <Project Path="src/RogueBit.Core/RogueBit.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/RogueBit.Console.Tests/RogueBit.Console.Tests.csproj" />
     <Project Path="tests/RogueBit.Core.Tests/RogueBit.Core.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">

@@ -1,11 +1,13 @@
 name: ci
 
-# The core is tested. The frontend is compiled but not run.
+# The rules are tested, and so is the part of the frontend that is ordinary
+# logic. The window itself is only compiled.
 #
-# SadConsole opens a real window through MonoGame, so the frontend cannot
-# execute on a runner with no display. Saying "tested" of a job that only
-# compiles would be a claim this workflow does not support, so the two jobs are
-# named for what they actually do.
+# SadConsole opens a real window through MonoGame, so nothing that draws can
+# execute on a runner with no display. The effects suite is testable because it
+# decides what an effect does without ever drawing one. Saying "tested" of a job
+# that only compiles would be a claim this workflow does not support, so the two
+# jobs are named for what they actually do.
 
 on:
   push:
@@ -22,7 +24,7 @@ env:
 
 jobs:
   test:
-    name: test the core
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +40,14 @@ jobs:
       - name: Check the formatting
         run: dotnet format --verify-no-changes --no-restore
 
-      - name: Test
+      - name: Test the rules
         run: dotnet test tests/RogueBit.Core.Tests/RogueBit.Core.Tests.csproj --no-restore --verbosity normal
 
+      - name: Test the frontend logic
+        run: dotnet test tests/RogueBit.Console.Tests/RogueBit.Console.Tests.csproj --no-restore --verbosity normal
+
   compile:
-    name: compile on ${{ matrix.os }}
+    name: compile the window on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

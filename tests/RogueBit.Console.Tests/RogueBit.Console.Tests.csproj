@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The frontend cannot be run without a display, but the part of it that
+       decides what an effect does is ordinary logic and is tested here. This
+       project is separate from the core suite so that the core suite keeps its
+       promise of touching no rendering dependency at all. -->
+  <PropertyGroup>
+    <RootNamespace>RogueBit.Console.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/RogueBit.Console/RogueBit.Console.csproj" />
+  </ItemGroup>
+
+</Project>

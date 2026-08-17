@@ -76,8 +76,8 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Test the core before shipping it
-        run: dotnet test tests/RogueBit.Core.Tests/RogueBit.Core.Tests.csproj --configuration Release
+      - name: Test before shipping
+        run: dotnet test --configuration Release
 
       - name: Publish
         run: >
