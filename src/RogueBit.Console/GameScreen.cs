@@ -7,6 +7,7 @@ using RogueBit.Core;
 using RogueBit.Core.Entities;
 using RogueBit.Core.Items;
 using RogueBit.Core.Map;
+using RogueBit.Core.Saves;
 
 // SadConsole ships its own Rectangle. Aliasing it keeps the two apart, which is
 // the collision that stopped the first version of this game compiling at all.
@@ -28,16 +29,43 @@ public sealed class GameScreen : SadConsole.Console
     public const int ScreenHeight = LogTop + LogLines;
 
     private readonly Theme theme;
+    private readonly Effects effects;
+    private readonly SaveSystem saves;
+    private readonly bool effectsEnabled;
+
     private Run run;
     private bool showingInventory;
+    private bool scoreRecorded;
 
-    public GameScreen(Run run, Theme theme)
+    public GameScreen(Run run, Theme theme, SaveSystem saves, bool effectsEnabled = true)
         : base(ScreenWidth, ScreenHeight)
     {
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(saves);
+
         this.run = run;
         this.theme = theme;
+        this.saves = saves;
+        this.effectsEnabled = effectsEnabled;
+
+        effects = new Effects(theme, run.Seed);
 
         IsFocused = true;
+        Draw();
+    }
+
+    /// <summary>
+    /// Keeps the particles moving between key presses. The game itself is turn
+    /// based and only changes when a key is pressed, so this redraws only while
+    /// something is actually in flight.
+    /// </summary>
+    public override void Update(TimeSpan delta)
+    {
+        base.Update(delta);
+
+        if (!effectsEnabled || !effects.IsBusy) return;
+
+        effects.Update(delta.TotalSeconds);
         Draw();
     }
 
@@ -47,16 +75,22 @@ public sealed class GameScreen : SadConsole.Console
 
         if (keyboard.IsKeyPressed(Keys.Escape))
         {
+            // Leaving keeps the run, so the game can be picked up again.
+            if (!run.IsOver) saves.Write(RunSerialiser.Capture(run));
             Environment.Exit(0);
             return true;
         }
 
         if (run.IsOver)
         {
+            RecordTheEndOfTheRun();
+
             if (keyboard.IsKeyPressed(Keys.R))
             {
                 run = run.Restart();
                 showingInventory = false;
+                scoreRecorded = false;
+                effects.Clear();
                 Draw();
             }
 
@@ -71,8 +105,31 @@ public sealed class GameScreen : SadConsole.Console
         }
 
         HandlePlayKeys(keyboard);
+
+        if (effectsEnabled) effects.Play(run.LastTurnEvents);
+        if (run.IsOver) RecordTheEndOfTheRun();
+
         Draw();
         return true;
+    }
+
+    private void SaveNow()
+    {
+        saves.Write(RunSerialiser.Capture(run));
+        run.Log.Add("The run is saved.", MessageKind.Good);
+    }
+
+    /// <summary>
+    /// Records the score once and removes the save. A dead run must not be
+    /// resumable, or the save becomes a way to undo dying.
+    /// </summary>
+    private void RecordTheEndOfTheRun()
+    {
+        if (scoreRecorded) return;
+
+        scoreRecorded = true;
+        saves.RecordScore(run.Score);
+        saves.Delete();
     }
 
     private void HandlePlayKeys(Keyboard keyboard)
@@ -90,7 +147,12 @@ public sealed class GameScreen : SadConsole.Console
         else if (keyboard.IsKeyPressed(Keys.G)) run.PickUp();
         else if (keyboard.IsKeyPressed(Keys.OemComma)) run.Descend();
         else if (keyboard.IsKeyPressed(Keys.I)) showingInventory = true;
-        else if (keyboard.IsKeyPressed(Keys.R)) run = run.Restart();
+        else if (keyboard.IsKeyPressed(Keys.S)) SaveNow();
+        else if (keyboard.IsKeyPressed(Keys.R))
+        {
+            run = run.Restart();
+            effects.Clear();
+        }
     }
 
     private void HandleInventoryKeys(Keyboard keyboard)
@@ -117,8 +179,11 @@ public sealed class GameScreen : SadConsole.Console
         this.Clear();
         this.Fill(new Area(0, 0, Width, Height), theme.Text, Theme.Background, 0);
 
-        DrawMap();
-        DrawEntities();
+        (int shakeX, int shakeY) = effectsEnabled ? effects.ShakeOffset : (0, 0);
+
+        DrawMap(shakeX, shakeY);
+        DrawEntities(shakeX, shakeY);
+        if (effectsEnabled) DrawParticles(shakeX, shakeY);
         DrawStatus();
         DrawLog();
 
@@ -126,7 +191,7 @@ public sealed class GameScreen : SadConsole.Console
         if (run.IsOver) DrawGameOver();
     }
 
-    private void DrawMap()
+    private void DrawMap(int shakeX, int shakeY)
     {
         for (int y = 0; y < run.Map.Height; y++)
         {
@@ -145,12 +210,12 @@ public sealed class GameScreen : SadConsole.Console
                     _ => ('#', lit ? theme.WallLit : theme.WallRemembered),
                 };
 
-                this.Print(x + 1, y + MapTop, glyph.ToString(), colour, Theme.Background);
+                PrintOnMap(x + shakeX, y + shakeY, glyph, colour);
             }
         }
     }
 
-    private void DrawEntities()
+    private void DrawEntities(int shakeX, int shakeY)
     {
         // Items first, so a monster standing on one is still the thing you see.
         foreach (Item item in run.Items)
@@ -164,7 +229,7 @@ public sealed class GameScreen : SadConsole.Console
                 _ => theme.Equipment,
             };
 
-            this.Print(item.Position.X + 1, item.Position.Y + MapTop, item.Glyph.ToString(), colour, Theme.Background);
+            PrintOnMap(item.Position.X + shakeX, item.Position.Y + shakeY, item.Glyph, colour);
         }
 
         foreach (Monster monster in run.Monsters)
@@ -172,15 +237,41 @@ public sealed class GameScreen : SadConsole.Console
             if (!run.Map.IsVisible(monster.Position)) continue;
 
             Color colour = monster.Behaviour == MonsterBehaviour.Boss ? theme.Boss : theme.Monster;
-            this.Print(monster.Position.X + 1, monster.Position.Y + MapTop, monster.Glyph.ToString(), colour, Theme.Background);
+            PrintOnMap(monster.Position.X + shakeX, monster.Position.Y + shakeY, monster.Glyph, colour);
         }
 
-        this.Print(
-            run.Player.Position.X + 1,
-            run.Player.Position.Y + MapTop,
-            run.Player.Glyph.ToString(),
-            theme.Player,
-            Theme.Background);
+        PrintOnMap(
+            run.Player.Position.X + shakeX,
+            run.Player.Position.Y + shakeY,
+            run.Player.Glyph,
+            theme.Player);
+    }
+
+    private void DrawParticles(int shakeX, int shakeY)
+    {
+        foreach (Particle particle in effects.Particles)
+        {
+            // A particle fades by moving toward the background rather than by
+            // changing its alpha, because a console cell has no transparency.
+            Color colour = Color.Lerp(Theme.Background, particle.Colour, (float)particle.Remaining);
+
+            PrintOnMap(
+                (int)Math.Round(particle.X) + shakeX,
+                (int)Math.Round(particle.Y) + shakeY,
+                particle.Glyph,
+                colour);
+        }
+    }
+
+    /// <summary>
+    /// Draws one cell of the map, dropping anything the shake has pushed off
+    /// the edge rather than letting it spill into the status bar.
+    /// </summary>
+    private void PrintOnMap(int x, int y, char glyph, Color colour)
+    {
+        if (x < 0 || x >= Run.MapWidth || y < 0 || y >= Run.MapHeight) return;
+
+        this.Print(x + 1, y + MapTop, glyph.ToString(), colour, Theme.Background);
     }
 
     private void DrawStatus()
@@ -245,6 +336,7 @@ public sealed class GameScreen : SadConsole.Console
         [
             "You died.",
             $"Floor {run.Depth}, {run.Turns} turns, {run.Score} points.",
+            $"Best so far {saves.ReadBestScore()}.",
             "R to play the same seed again, Escape to leave.",
         ];
 

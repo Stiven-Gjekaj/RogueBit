@@ -1,7 +1,7 @@
 namespace RogueBit.Console;
 
 /// <summary>What the player asked for on the command line.</summary>
-public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp)
+public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp, bool NoEffects = false, bool Resume = false)
 {
     public const string Usage = """
         RogueBit, a turn-based ASCII roguelike.
@@ -11,8 +11,13 @@ public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp)
 
         Options:
           --seed <number>   Play a named dungeon. The same seed replays the same run.
+          --continue        Pick up the saved run, if there is one.
           --colour-blind    Use a palette that does not rely on red against green.
+          --no-effects      Turn off the particles and the screen shake.
           --help            Show this text.
+
+        The run is saved when you press S, and when you leave with Escape.
+        A run that ends is removed, so dying cannot be undone by loading.
         """;
 
     /// <summary>
@@ -28,6 +33,8 @@ public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp)
         int? seed = null;
         bool colourBlind = false;
         bool help = false;
+        bool noEffects = false;
+        bool resume = false;
 
         for (int i = 0; i < arguments.Length; i++)
         {
@@ -55,6 +62,14 @@ public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp)
                     colourBlind = true;
                     break;
 
+                case "--no-effects":
+                    noEffects = true;
+                    break;
+
+                case "--continue":
+                    resume = true;
+                    break;
+
                 case "--help":
                 case "-h":
                     help = true;
@@ -66,6 +81,12 @@ public sealed record Options(int? Seed, bool ColourBlind, bool ShowHelp)
             }
         }
 
-        return new Options(seed, colourBlind, help);
+        if (seed is not null && resume)
+        {
+            error = "--seed and --continue ask for different runs. Choose one.";
+            return new Options(null, colourBlind, true);
+        }
+
+        return new Options(seed, colourBlind, help, noEffects, resume);
     }
 }
