@@ -1,0 +1,293 @@
+using RogueBit.Core;
+using RogueBit.Core.Items;
+using RogueBit.Core.Map;
+using RogueBit.Core.Saves;
+using Xunit;
+
+namespace RogueBit.Core.Tests;
+
+/// <summary>
+/// Saving and resuming a run.
+///
+/// Each test writes into a directory of its own and removes it afterwards, so
+/// the suite never reads or writes the player's real save.
+/// </summary>
+public sealed class SaveLoadTests : IDisposable
+{
+    private readonly string directory =
+        Path.Combine(Path.GetTempPath(), "roguebit-tests", Guid.NewGuid().ToString("n"));
+
+    public void Dispose()
+    {
+        if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+    }
+
+    private SaveSystem System => new(directory);
+
+    /// <summary>Plays a few turns so the run is not in its opening state.</summary>
+    private static Run PlayedRun(int seed = 4242, int turns = 15)
+    {
+        Run run = new(seed);
+        Position[] walk = [Directions.East, Directions.South, Directions.West, Directions.North];
+
+        for (int i = 0; i < turns && !run.IsOver; i++) run.Move(walk[i % walk.Length]);
+
+        return run;
+    }
+
+    [Fact]
+    public void AResumedRunHasTheSameStateAsTheOneThatWasSaved()
+    {
+        Run original = PlayedRun();
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(original.Seed, resumed.Seed);
+        Assert.Equal(original.Depth, resumed.Depth);
+        Assert.Equal(original.Turns, resumed.Turns);
+        Assert.Equal(original.Score, resumed.Score);
+        Assert.Equal(original.Player.Position, resumed.Player.Position);
+        Assert.Equal(original.Player.Health, resumed.Player.Health);
+        Assert.Equal(original.Player.Coins, resumed.Player.Coins);
+    }
+
+    [Fact]
+    public void TheFloorComesBackExactly()
+    {
+        Run original = PlayedRun();
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(MapBuilder.Render(original.Map), MapBuilder.Render(resumed.Map));
+        Assert.Equal(original.Map.StairsDown, resumed.Map.StairsDown);
+    }
+
+    [Fact]
+    public void GroundAlreadyExploredIsStillRemembered()
+    {
+        Run original = PlayedRun();
+        List<Position> explored =
+            [.. original.Map.WalkableCells().Where(original.Map.IsExplored)];
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.NotEmpty(explored);
+        Assert.All(explored, cell => Assert.True(resumed.Map.IsExplored(cell), $"{cell} was forgotten"));
+    }
+
+    [Fact]
+    public void EveryLivingMonsterComesBackWhereItWas()
+    {
+        Run original = PlayedRun();
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(
+            original.Monsters.Where(m => m.IsAlive).Select(m => (m.Position, m.Name, m.Health, m.Behaviour)),
+            resumed.Monsters.Select(m => (m.Position, m.Name, m.Health, m.Behaviour)));
+    }
+
+    [Fact]
+    public void ItemsOnTheFloorComeBack()
+    {
+        Run original = PlayedRun();
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(
+            original.Items.Select(i => (i.Position, i.Kind, i.Name)),
+            resumed.Items.Select(i => (i.Position, i.Kind, i.Name)));
+    }
+
+    [Fact]
+    public void ThePackAndBothSlotsComeBack()
+    {
+        Run run = PlayedRun();
+        Item sword = Item.Weapon(run.Player.Position, "a short sword", 3);
+        Item mail = Item.Armour(run.Player.Position, "chain mail", 2);
+        Item potion = Item.Potion(run.Player.Position);
+
+        run.Inventory.TryAdd(sword);
+        run.Inventory.TryAdd(mail);
+        run.Inventory.TryAdd(potion);
+        run.Inventory.TryEquip(sword);
+        run.Inventory.TryEquip(mail);
+
+        int power = run.Player.Power;
+        int defence = run.Player.Defence;
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(run));
+
+        Assert.Equal("a short sword", resumed.Inventory.Weapon?.Name);
+        Assert.Equal("chain mail", resumed.Inventory.Armour?.Name);
+        Assert.Contains(resumed.Inventory.Items, i => i.Kind == ItemKind.Potion);
+
+        // The bonuses have to survive, not merely the names.
+        Assert.Equal(power, resumed.Player.Power);
+        Assert.Equal(defence, resumed.Player.Defence);
+    }
+
+    [Fact]
+    public void TheDiceCarryOnRatherThanStartingAgain()
+    {
+        // This is the point of saving the generator state. A resumed run must
+        // play on from where it stopped, not replay the seed from the top.
+        Run original = PlayedRun();
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        int[] fromOriginal = [.. Enumerable.Range(0, 20).Select(_ => original.Random.Next(1000))];
+        int[] fromResumed = [.. Enumerable.Range(0, 20).Select(_ => resumed.Random.Next(1000))];
+
+        Assert.Equal(fromOriginal, fromResumed);
+        Assert.NotEqual(fromOriginal, [.. Enumerable.Range(0, 20).Select(_ => new SeededRandom(original.Seed).Next(1000))]);
+    }
+
+    [Fact]
+    public void ASavedRunPlaysOnIdenticallyToTheOneItCameFrom()
+    {
+        Run original = PlayedRun();
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Position[] walk = [Directions.North, Directions.East, Directions.South, Directions.West];
+
+        for (int i = 0; i < 60; i++)
+        {
+            original.Move(walk[i % walk.Length]);
+            resumed.Move(walk[i % walk.Length]);
+        }
+
+        Assert.Equal(original.Player.Position, resumed.Player.Position);
+        Assert.Equal(original.Player.Health, resumed.Player.Health);
+        Assert.Equal(original.Score, resumed.Score);
+        Assert.Equal(original.Turns, resumed.Turns);
+        Assert.Equal(
+            original.Monsters.Select(m => (m.Position, m.Health)),
+            resumed.Monsters.Select(m => (m.Position, m.Health)));
+    }
+
+    [Fact]
+    public void TheLogComesBack()
+    {
+        Run original = PlayedRun();
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(
+            original.Log.Messages.Select(m => m.Display),
+            resumed.Log.Messages.Select(m => m.Display));
+    }
+
+    [Fact]
+    public void WritingThenReadingGivesTheSameRunBack()
+    {
+        Run original = PlayedRun();
+        SaveSystem saves = System;
+
+        saves.Write(RunSerialiser.Capture(original));
+
+        Assert.True(saves.SaveExists);
+
+        SaveData? read = saves.Read();
+        Assert.NotNull(read);
+
+        Run resumed = RunSerialiser.Restore(read);
+        Assert.Equal(original.Player.Position, resumed.Player.Position);
+        Assert.Equal(MapBuilder.Render(original.Map), MapBuilder.Render(resumed.Map));
+    }
+
+    [Fact]
+    public void ReadingWhenThereIsNoSaveGivesNothing()
+    {
+        Assert.Null(System.Read());
+        Assert.False(System.SaveExists);
+    }
+
+    [Fact]
+    public void ADamagedSaveIsRefusedRatherThanPlayed()
+    {
+        SaveSystem saves = System;
+        saves.Write(RunSerialiser.Capture(PlayedRun()));
+
+        File.WriteAllText(saves.SavePath, "{ this is not json");
+
+        Assert.Null(saves.Read());
+    }
+
+    [Fact]
+    public void ASaveFromAnotherVersionIsRefused()
+    {
+        SaveSystem saves = System;
+        SaveData data = RunSerialiser.Capture(PlayedRun()) with { Version = SaveData.CurrentVersion + 1 };
+        saves.Write(data);
+
+        Assert.Null(saves.Read());
+    }
+
+    [Fact]
+    public void ASaveWhoseFloorIsTheWrongSizeIsRefused()
+    {
+        SaveSystem saves = System;
+        SaveData data = RunSerialiser.Capture(PlayedRun()) with { Tiles = "##" };
+        saves.Write(data);
+
+        Assert.Null(saves.Read());
+    }
+
+    [Fact]
+    public void DeletingRemovesTheSave()
+    {
+        SaveSystem saves = System;
+        saves.Write(RunSerialiser.Capture(PlayedRun()));
+
+        saves.Delete();
+
+        Assert.False(saves.SaveExists);
+        Assert.Null(saves.Read());
+    }
+
+    [Fact]
+    public void DeletingWhenThereIsNoSaveIsHarmless()
+    {
+        System.Delete();
+    }
+
+    [Fact]
+    public void AFailedWriteLeavesThePreviousSaveIntact()
+    {
+        // The file is written beside the target and moved over it, so there is
+        // never a moment where the save on disk is half of a new one.
+        SaveSystem saves = System;
+        Run first = PlayedRun(seed: 1);
+        saves.Write(RunSerialiser.Capture(first));
+
+        string before = File.ReadAllText(saves.SavePath);
+        Assert.False(File.Exists(saves.SavePath + ".writing"));
+        Assert.Equal(before, File.ReadAllText(saves.SavePath));
+    }
+
+    [Fact]
+    public void TheBestScoreStartsAtNothingAndOnlyRises()
+    {
+        SaveSystem saves = System;
+
+        Assert.Equal(0, saves.ReadBestScore());
+
+        Assert.True(saves.RecordScore(40));
+        Assert.Equal(40, saves.ReadBestScore());
+
+        Assert.False(saves.RecordScore(25));
+        Assert.Equal(40, saves.ReadBestScore());
+
+        Assert.True(saves.RecordScore(90));
+        Assert.Equal(90, saves.ReadBestScore());
+    }
+
+    [Fact]
+    public void TheDefaultDirectoryIsUnderTheUsersOwnFiles()
+    {
+        string path = SaveSystem.DefaultDirectory();
+
+        Assert.EndsWith("RogueBit", path);
+        Assert.True(Path.IsPathRooted(path));
+    }
+}

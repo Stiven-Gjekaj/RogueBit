@@ -69,6 +69,51 @@ public sealed class Run
         Log.Add($"You enter the dungeon. Seed {seed}.", MessageKind.Good);
     }
 
+    private Run(SeededRandom random, DungeonMap map, Player player, int depth, int turns)
+    {
+        Seed = random.Seed;
+        Random = random;
+        Map = map;
+        Player = player;
+        Depth = depth;
+        Turns = turns;
+    }
+
+    /// <summary>
+    /// Rebuilds a run that was saved. Everything is handed in rather than
+    /// generated, because a resumed run has to be the run that was left and not
+    /// a fresh one on the same seed.
+    /// </summary>
+    public static Run Resume(
+        SeededRandom random,
+        DungeonMap map,
+        Player player,
+        IEnumerable<Monster> monsters,
+        IEnumerable<Item> items,
+        int depth,
+        int turns,
+        IEnumerable<(string Text, MessageKind Kind, int Count)> log)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(monsters);
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(log);
+
+        Run run = new(random, map, player, depth, turns);
+        run.monsters.AddRange(monsters);
+        run.items.AddRange(items);
+
+        foreach ((string text, MessageKind kind, int count) in log)
+        {
+            for (int i = 0; i < Math.Max(1, count); i++) run.Log.Add(text, kind);
+        }
+
+        run.UpdateVision();
+        return run;
+    }
+
     /// <summary>Starts the same run again from the top, on the same seed.</summary>
     public Run Restart() => new(Seed);
 
