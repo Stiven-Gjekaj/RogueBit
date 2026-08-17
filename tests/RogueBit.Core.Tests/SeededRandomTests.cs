@@ -94,4 +94,93 @@ public class SeededRandomTests
     [Fact]
     public void PickRefusesAnEmptyList()
         => Assert.Throws<ArgumentException>(() => new SeededRandom(1).Pick(Array.Empty<int>()));
+
+    [Fact]
+    public void TheSequenceForASeedIsPinned()
+    {
+        // This is the promise the whole game rests on. A saved run, a shared
+        // seed and every screenshot in the documentation all assume that seed
+        // 12345 means one particular dungeon and always will.
+        //
+        // If this test fails, the generator has changed and every one of those
+        // has quietly come to mean something else. That is a breaking change to
+        // the game, not a detail, and it needs a new major version rather than a
+        // new set of expected numbers here.
+        SeededRandom source = new(12345);
+
+        int[] drawn = [.. Enumerable.Range(0, 10).Select(_ => source.Next(1000))];
+
+        Assert.Equal([124, 104, 3, 176, 654, 690, 840, 798, 115, 834], drawn);
+    }
+
+    [Fact]
+    public void ASnapshotResumesExactlyWhereItWasTaken()
+    {
+        SeededRandom source = new(555);
+        for (int i = 0; i < 37; i++) _ = source.Next(100);
+
+        (int seed, ulong state, ulong increment) = source.Snapshot();
+        SeededRandom resumed = SeededRandom.Restore(seed, state, increment);
+
+        int[] fromOriginal = [.. Enumerable.Range(0, 20).Select(_ => source.Next(1000))];
+        int[] fromResumed = [.. Enumerable.Range(0, 20).Select(_ => resumed.Next(1000))];
+
+        Assert.Equal(fromOriginal, fromResumed);
+        Assert.Equal(555, resumed.Seed);
+    }
+
+    [Fact]
+    public void ASnapshotTakenLaterIsNotTheSameAsOneTakenEarlier()
+    {
+        SeededRandom source = new(555);
+        (_, ulong first, _) = source.Snapshot();
+        _ = source.Next(100);
+        (_, ulong second, _) = source.Snapshot();
+
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void RestoreRefusesAnEvenIncrement()
+    {
+        // An even increment gives the generator a much shorter period, so a
+        // damaged save must be refused rather than played.
+        Assert.Throws<ArgumentException>(() => SeededRandom.Restore(1, 42UL, 2UL));
+    }
+
+    [Fact]
+    public void EveryValueInARangeComesUpAboutEquallyOften()
+    {
+        // Taking the remainder of a random number biases the low values. This
+        // checks the rejection sampling that avoids it.
+        SeededRandom source = new(31337);
+        int[] counts = new int[6];
+
+        for (int i = 0; i < 60_000; i++) counts[source.Next(6)]++;
+
+        Assert.All(counts, count => Assert.InRange(count, 9_400, 10_600));
+    }
+
+    [Fact]
+    public void ADoubleStaysInsideItsRange()
+    {
+        SeededRandom source = new(8);
+
+        for (int i = 0; i < 5_000; i++)
+        {
+            double value = source.NextDouble();
+            Assert.InRange(value, 0.0, 0.9999999999);
+        }
+    }
+
+    [Fact]
+    public void RefusesABoundThatIsNotPositive()
+    {
+        SeededRandom source = new(1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => source.Next(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => source.Next(-3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => source.Next(5, 5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => source.Between(5, 4));
+    }
 }

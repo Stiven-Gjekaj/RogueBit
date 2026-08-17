@@ -172,8 +172,7 @@ public class RunTests
         Run run = new(seed: 1);
         int shallow = run.Score;
 
-        // Walk to the stairs and take them.
-        Assert.True(WalkToStairsAndDescend(run), "the player could not reach the stairs");
+        Assert.True(StandOnStairsAndDescend(run), "descending from the stairs was refused");
 
         Assert.Equal(2, run.Depth);
         Assert.True(run.Score > shallow);
@@ -185,7 +184,7 @@ public class RunTests
         Run run = new(seed: 1);
         string[] first = MapBuilder.Render(run.Map);
 
-        Assert.True(WalkToStairsAndDescend(run));
+        Assert.True(StandOnStairsAndDescend(run));
 
         Assert.NotEqual(first, MapBuilder.Render(run.Map));
         Assert.True(run.Map.IsWalkable(run.Player.Position));
@@ -228,25 +227,18 @@ public class RunTests
         Assert.NotEmpty(run.Log.Messages);
     }
 
-    /// <summary>Walks the shortest path to the stairs and goes down them.</summary>
-    private static bool WalkToStairsAndDescend(Run run)
+    /// <summary>
+    /// Puts the player on the stairs and takes them.
+    ///
+    /// An earlier version walked there by A*, and died on the way as soon as
+    /// the generator changed. These two tests are about what descending does,
+    /// not about surviving a walk, so they build the state they need instead of
+    /// hoping a bot reaches it. That the stairs are reachable at all is held by
+    /// PathFinderTests.FindsTheStairsFromTheEntranceOnEveryFloorItGenerates.
+    /// </summary>
+    private static bool StandOnStairsAndDescend(Run run)
     {
-        for (int guard = 0; guard < 4000 && !run.IsOver; guard++)
-        {
-            if (run.Map[run.Player.Position] == TileKind.StairsDown)
-            {
-                return run.Descend() == ActionResult.Took;
-            }
-
-            IReadOnlyList<Position> path =
-                Core.Pathing.PathFinder.Find(run.Map, run.Player.Position, run.Map.StairsDown);
-
-            if (path.Count == 0) return false;
-
-            Position step = path[0] - run.Player.Position;
-            if (run.Move(step) == ActionResult.Refused) run.Wait();
-        }
-
-        return false;
+        run.Player.Position = run.Map.StairsDown;
+        return run.Descend() == ActionResult.Took;
     }
 }
