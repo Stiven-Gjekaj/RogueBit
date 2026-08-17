@@ -11,11 +11,12 @@ namespace RogueBit.Core.Tests;
 /// </summary>
 public class DungeonGeneratorContractTests
 {
-    public static TheoryData<string> GeneratorNames() => ["rooms"];
+    public static TheoryData<string> GeneratorNames() => ["rooms", "cave"];
 
     private static IDungeonGenerator Create(string name) => name switch
     {
         "rooms" => new BspDungeonGenerator(),
+        "cave" => new DrunkardWalkGenerator(),
         _ => throw new ArgumentException($"No generator called {name}.", nameof(name)),
     };
 
