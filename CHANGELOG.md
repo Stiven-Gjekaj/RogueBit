@@ -4,6 +4,34 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
+## 0.1.1-alpha
+
+The first version that runs. 0.1.0-alpha builds and then throws before it draws
+anything, so its archives are not usable.
+
+### Fixed
+
+- **The game starts.** `SadConsole.Host.MonoGame` declares a reference to
+  `MonoGame.Framework` but does not carry it. The compiler was satisfied, the
+  build was green, and the published output had no such assembly, so starting
+  the game threw `FileNotFoundException` before a window appeared.
+
+### Added
+
+- **An ending.** Floor ten has no stairs down and holds a warden twice the size
+  of the one halfway. Killing it wins the run and is worth 250 points. The
+  monsters do not take their turn after the winning blow, so one of them cannot
+  kill a player who has already finished.
+- **A check that a published build can start.** Continuous integration
+  publishes and then asks whether the assemblies and the native libraries are
+  actually in the output. Compiling proves a reference resolves; it does not
+  prove the file reaches the archive. The release refuses to attach an archive
+  that fails this.
+- **Tests for the effects the frontend draws**, in their own project, so the
+  core suite keeps its promise of touching no rendering dependency.
+- **A banner** built from a dungeon the game really played, with the tool that
+  captured it and the script that draws it.
+
 ## 0.1.0-alpha
 
 The first version that builds. Everything before this point is kept on the

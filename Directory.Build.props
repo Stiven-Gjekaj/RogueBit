@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <Version>0.1.0-alpha</Version>
+    <Version>0.1.1-alpha</Version>
     <Authors>Stiven Gjekaj</Authors>
     <Product>RogueBit</Product>
     <RepositoryUrl>https://github.com/Stiven-Gjekaj/RogueBit</RepositoryUrl>
