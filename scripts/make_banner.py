@@ -106,6 +106,12 @@ def embedded_font() -> str:
     subsetter.populate(text="".join(sorted(used)))
     subsetter.subset(font)
 
+    # fontTools stamps the save time into head, which makes every build produce
+    # a different byte string for the same input. Pin it, so regenerating the
+    # banner from the same frame gives the same file.
+    font["head"].created = 0
+    font["head"].modified = 0
+
     buffer = io.BytesIO()
     font.flavor = "woff2"
     font.save(buffer)
