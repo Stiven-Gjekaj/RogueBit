@@ -21,6 +21,7 @@ public static class CellKind
     public const char Potion = 'O';
     public const char Equipment = 'E';
     public const char Stairs = 'S';
+    public const char Door = 'D';
     public const char FloorLit = 'f';
     public const char FloorRemembered = 'r';
     public const char WallLit = 'w';
@@ -249,6 +250,17 @@ public sealed class FrameCapture
                             glyph = '>';
                             cell = CellKind.Stairs;
                             stairs++;
+                            break;
+
+                        case TileKind.StairsUp:
+                            glyph = '<';
+                            cell = CellKind.Stairs;
+                            stairs++;
+                            break;
+
+                        case TileKind.Door:
+                            glyph = '+';
+                            cell = CellKind.Door;
                             break;
 
                         case TileKind.Floor:

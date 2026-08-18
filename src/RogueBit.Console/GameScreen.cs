@@ -207,6 +207,7 @@ public sealed class GameScreen : SadConsole.Console
                 {
                     TileKind.StairsDown => ('>', lit ? theme.Stairs : theme.FloorRemembered),
                     TileKind.StairsUp => ('<', lit ? theme.Stairs : theme.FloorRemembered),
+                    TileKind.Door => ('+', lit ? theme.Door : theme.FloorRemembered),
                     TileKind.Floor => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
                     _ => ('#', lit ? theme.WallLit : theme.WallRemembered),
                 };
