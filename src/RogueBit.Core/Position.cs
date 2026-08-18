@@ -24,6 +24,11 @@ public static class Directions
     public static readonly Position West = new(-1, 0);
     public static readonly Position East = new(1, 0);
 
+    public static readonly Position NorthWest = new(-1, -1);
+    public static readonly Position NorthEast = new(1, -1);
+    public static readonly Position SouthWest = new(-1, 1);
+    public static readonly Position SouthEast = new(1, 1);
+
     /// <summary>The four steps that share an edge.</summary>
     public static readonly IReadOnlyList<Position> Cardinal = [North, South, West, East];
 
@@ -31,6 +36,6 @@ public static class Directions
     public static readonly IReadOnlyList<Position> All =
     [
         North, South, West, East,
-        new(-1, -1), new(1, -1), new(-1, 1), new(1, 1),
+        NorthWest, NorthEast, SouthWest, SouthEast,
     ];
 }

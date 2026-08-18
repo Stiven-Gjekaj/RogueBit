@@ -33,5 +33,21 @@ public static class Keybindings
         (Keys.D, Directions.East),
         (Keys.L, Directions.East),
         (Keys.NumPad6, Directions.East),
+
+        // The diagonals. The numeric keypad has them where they point, and
+        // yubn is the roguelike habit, sitting round hjkl the same way. There
+        // is no arrow key or WASD key for a diagonal, so those two layouts
+        // stay on four directions and nothing is taken away from them.
+        (Keys.Y, Directions.NorthWest),
+        (Keys.NumPad7, Directions.NorthWest),
+
+        (Keys.U, Directions.NorthEast),
+        (Keys.NumPad9, Directions.NorthEast),
+
+        (Keys.B, Directions.SouthWest),
+        (Keys.NumPad1, Directions.SouthWest),
+
+        (Keys.N, Directions.SouthEast),
+        (Keys.NumPad3, Directions.SouthEast),
     ];
 }

@@ -5,6 +5,9 @@ using RogueBit.Core.Map;
 /// <summary>
 /// Finds the shortest walk between two cells with A*.
 ///
+/// The walker moves in eight directions and every step costs the same, which is
+/// what makes Chebyshev distance the right estimate.
+///
 /// The search is deliberately given a blocking test rather than reading the map
 /// alone. An enemy has to path round the other enemies as well as round the
 /// walls, and the goal itself must stay reachable even when a body stands on
@@ -45,11 +48,11 @@ public static class PathFinder
         {
             if (current == goal) return Rebuild(cameFrom, start, goal);
 
-            foreach (Position step in Directions.Cardinal)
+            foreach (Position step in Directions.All)
             {
                 Position next = current + step;
 
-                if (!map.IsWalkable(next)) continue;
+                if (!map.CanStep(current, next)) continue;
 
                 // The goal may be occupied. Anything else that is blocked is
                 // not a cell this walker can stand on.
@@ -82,11 +85,15 @@ public static class PathFinder
     }
 
     /// <summary>
-    /// Manhattan distance. It never overstates the true cost on a grid of four
-    /// directions, which is what keeps the result a shortest path rather than
-    /// merely a short one.
+    /// Chebyshev distance, because a diagonal step costs the same as a
+    /// straight one and covers both axes at once.
+    ///
+    /// Manhattan is what this used while the walker moved in four directions.
+    /// It overstates the true cost as soon as diagonals are allowed, and a
+    /// heuristic that overstates stops giving shortest paths, so it had to move
+    /// the day the eighth direction arrived.
     /// </summary>
-    private static int Heuristic(Position from, Position to) => from.ManhattanDistanceTo(to) * StepCost;
+    private static int Heuristic(Position from, Position to) => from.ChebyshevDistanceTo(to) * StepCost;
 
     private static List<Position> Rebuild(Dictionary<Position, Position> cameFrom, Position start, Position goal)
     {

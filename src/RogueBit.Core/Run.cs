@@ -221,6 +221,10 @@ public sealed class Run
 
         Position target = Player.Position + step;
 
+        // Whether the step is legal is asked before anything else, so a blow
+        // cannot be swung through the corner of a wall either.
+        if (!Map.CanStep(Player.Position, target)) return ActionResult.Refused;
+
         if (MonsterAt(target) is { } monster)
         {
             BeginTurn();
@@ -228,8 +232,6 @@ public sealed class Run
             EndTurn();
             return ActionResult.Took;
         }
-
-        if (!Map.IsWalkable(target)) return ActionResult.Refused;
 
         BeginTurn();
         Player.Position = target;
@@ -575,7 +577,10 @@ public sealed class Run
 
     private void TakeMonsterTurn(Monster monster)
     {
-        int distance = monster.Position.ManhattanDistanceTo(Player.Position);
+        // Chebyshev, because a monster moves in eight directions now. Under
+        // Manhattan a monster standing on a corner was two away, so it would
+        // never swing and would spend its turn trying to walk onto the player.
+        int distance = monster.Position.ChebyshevDistanceTo(Player.Position);
 
         if (distance > monster.AggroRadius)
         {
@@ -666,9 +671,9 @@ public sealed class Run
 
     private void Wander(Monster monster)
     {
-        Position target = monster.Position + Random.Pick(Directions.Cardinal);
+        Position target = monster.Position + Random.Pick(Directions.All);
 
-        if (Map.IsWalkable(target) && !IsOccupied(target)) monster.Position = target;
+        if (Map.CanStep(monster.Position, target) && !IsOccupied(target)) monster.Position = target;
     }
 
     private void UpdateVision() => FieldOfView.Compute(Map, Player.Position, VisionRadius);
