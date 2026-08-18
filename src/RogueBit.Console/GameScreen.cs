@@ -75,6 +75,16 @@ public sealed class GameScreen : SadConsole.Console
 
         if (keyboard.IsKeyPressed(Keys.Escape))
         {
+            // An overlay takes Escape before the game does. Closing the pack
+            // used to save and quit instead, because this ran first and the
+            // branch further down that meant to close it was never reached.
+            if (showingInventory)
+            {
+                showingInventory = false;
+                Draw();
+                return true;
+            }
+
             // Leaving keeps the run, so the game can be picked up again.
             if (!run.IsOver) saves.Write(RunSerialiser.Capture(run));
             Environment.Exit(0);
@@ -157,7 +167,8 @@ public sealed class GameScreen : SadConsole.Console
 
     private void HandleInventoryKeys(Keyboard keyboard)
     {
-        if (keyboard.IsKeyPressed(Keys.I) || keyboard.IsKeyPressed(Keys.Escape))
+        // Escape is dealt with before this, so only the opening key closes here.
+        if (keyboard.IsKeyPressed(Keys.I))
         {
             showingInventory = false;
             return;
