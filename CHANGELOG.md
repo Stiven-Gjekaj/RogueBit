@@ -4,7 +4,7 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
-## Unreleased
+## 0.2.0-alpha
 
 ### Added
 
@@ -32,7 +32,6 @@ Semantic Versioning.
   to prove the build runs before it reports success. Both are attached to every
   release as well as living on the branch, and `--uninstall` takes it away
   again.
-
 - **A way back up.** Every floor below the first has stairs on the cell the
   player arrives on, and the comma takes whichever staircase is underfoot
   rather than only the one going down.
@@ -60,6 +59,10 @@ Semantic Versioning.
   into one built on the spot. The file version goes to two, and a version one
   save is refused: it does not record where the player came in, so its floor
   has nowhere to put the stairs back up.
+
+- **The banner is retaken** on a floor this game builds, with the doorways on
+  it and the version read from the project rather than written down. The old
+  one predated doors and traps and advertised 0.1.0-alpha.
 
 ### Fixed
 
