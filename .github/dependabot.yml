@@ -10,6 +10,18 @@ updates:
     labels: [dependencies]
     commit-message:
       prefix: "deps"
+    groups:
+      # The test tooling moves together and is checked by running the suite, so
+      # one pull request for the lot of it is enough.
+      test-tooling:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+
+    # SadConsole and MonoGame are deliberately left ungrouped. They are what the
+    # game draws with, the host package binds to one exact MonoGame version, and
+    # a mismatch there already shipped a release that could not start. Those
+    # arrive one at a time so each gets looked at on its own.
 
   - package-ecosystem: github-actions
     directory: /
@@ -20,3 +32,6 @@ updates:
     labels: [dependencies, ci]
     commit-message:
       prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
