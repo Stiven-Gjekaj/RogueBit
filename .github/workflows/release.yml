@@ -126,6 +126,13 @@ jobs:
           set -euo pipefail
           mkdir -p release
           find downloaded -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp {} release/ \;
+
+          # The install scripts ride along, so somebody who lands on the
+          # release page can take one from there rather than from a branch.
+          # They are checksummed with everything else, which is worth having
+          # for a script people are asked to pipe into a shell.
+          cp scripts/install.sh scripts/install.ps1 release/
+
           cd release
           sha256sum * > SHA256SUMS
           cat SHA256SUMS
