@@ -145,7 +145,7 @@ public sealed class GameScreen : SadConsole.Console
 
         if (keyboard.IsKeyPressed(Keys.OemPeriod) || keyboard.IsKeyPressed(Keys.NumPad5)) run.Wait();
         else if (keyboard.IsKeyPressed(Keys.G)) run.PickUp();
-        else if (keyboard.IsKeyPressed(Keys.OemComma)) run.Descend();
+        else if (keyboard.IsKeyPressed(Keys.OemComma)) run.TakeStairs();
         else if (keyboard.IsKeyPressed(Keys.I)) showingInventory = true;
         else if (keyboard.IsKeyPressed(Keys.S)) SaveNow();
         else if (keyboard.IsKeyPressed(Keys.R))
@@ -206,6 +206,7 @@ public sealed class GameScreen : SadConsole.Console
                 (char glyph, Color colour) = kind switch
                 {
                     TileKind.StairsDown => ('>', lit ? theme.Stairs : theme.FloorRemembered),
+                    TileKind.StairsUp => ('<', lit ? theme.Stairs : theme.FloorRemembered),
                     TileKind.Floor => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
                     _ => ('#', lit ? theme.WallLit : theme.WallRemembered),
                 };

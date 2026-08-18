@@ -314,6 +314,17 @@ public sealed class Run
         return ActionResult.Took;
     }
 
+    /// <summary>
+    /// Takes whichever staircase the player is standing on.
+    ///
+    /// A cell holds one staircase or none, so there is never a choice to make
+    /// and never a second key to learn. Standing on nothing reports the same
+    /// refusal as trying to go down without stairs, which is the more common
+    /// mistake of the two.
+    /// </summary>
+    public ActionResult TakeStairs() =>
+        Map[Player.Position] == TileKind.StairsUp ? Ascend() : Descend();
+
     /// <summary>Goes back up the stairs, if the player is standing on them.</summary>
     public ActionResult Ascend()
     {

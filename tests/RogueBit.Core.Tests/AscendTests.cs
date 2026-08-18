@@ -180,6 +180,33 @@ public class AscendTests
         Assert.Contains(run.Log.Messages, m => m.Text == "A staircase leads back up from here.");
     }
 
+    [Fact]
+    public void OneKeyTakesWhicheverStaircaseIsUnderfoot()
+    {
+        Run run = new(seed: 3);
+
+        // On the stairs down, it goes down.
+        run.Player.Position = run.Map.StairsDown;
+        Assert.Equal(ActionResult.Took, run.TakeStairs());
+        Assert.Equal(2, run.Depth);
+
+        // On the stairs up, the same key goes up.
+        Assert.Equal(TileKind.StairsUp, run.Map[run.Player.Position]);
+        Assert.Equal(ActionResult.Took, run.TakeStairs());
+        Assert.Equal(1, run.Depth);
+    }
+
+    [Fact]
+    public void TakingStairsOffThemIsRefused()
+    {
+        Run run = new(seed: 3);
+        run.Player.Position = run.Map.Entrance;
+
+        Assert.NotEqual(run.Map.StairsDown, run.Player.Position);
+        Assert.Equal(ActionResult.Refused, run.TakeStairs());
+        Assert.Equal(1, run.Depth);
+    }
+
     private static void Descend(Run run)
     {
         run.Player.Position = run.Map.StairsDown;
