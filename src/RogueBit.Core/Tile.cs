@@ -6,6 +6,12 @@ public enum TileKind
     Wall,
     Floor,
     StairsDown,
+
+    /// <summary>
+    /// The way back to the floor above. Every floor below the first has one,
+    /// where the player arrives.
+    /// </summary>
+    StairsUp,
 }
 
 /// <summary>
@@ -15,8 +21,10 @@ public enum TileKind
 public static class TileRules
 {
     /// <summary>True when an entity can stand on this tile.</summary>
-    public static bool IsWalkable(this TileKind kind) => kind is TileKind.Floor or TileKind.StairsDown;
+    public static bool IsWalkable(this TileKind kind) =>
+        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp;
 
     /// <summary>True when light passes through this tile.</summary>
-    public static bool IsTransparent(this TileKind kind) => kind is TileKind.Floor or TileKind.StairsDown;
+    public static bool IsTransparent(this TileKind kind) =>
+        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp;
 }
