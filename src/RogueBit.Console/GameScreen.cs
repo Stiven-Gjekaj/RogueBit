@@ -203,18 +203,15 @@ public sealed class GameScreen : SadConsole.Console
                 bool lit = run.Map.IsVisible(cell);
                 TileKind kind = run.Map[cell];
 
-                (char glyph, Color colour) = kind switch
-                {
-                    TileKind.StairsDown => ('>', lit ? theme.Stairs : theme.FloorRemembered),
-                    TileKind.StairsUp => ('<', lit ? theme.Stairs : theme.FloorRemembered),
-                    TileKind.Door => ('+', lit ? theme.Door : theme.FloorRemembered),
-                    TileKind.TrapSprung => ('^', lit ? theme.Trap : theme.FloorRemembered),
+                char glyph = MapText.Glyph(kind);
 
-                    // An armed trap is drawn as the ground it is hidden under.
-                    // A trap the player can see is not a trap.
-                    TileKind.TrapArmed => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
-                    TileKind.Floor => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
-                    _ => ('#', lit ? theme.WallLit : theme.WallRemembered),
+                Color colour = kind switch
+                {
+                    TileKind.StairsDown or TileKind.StairsUp => lit ? theme.Stairs : theme.FloorRemembered,
+                    TileKind.Door => lit ? theme.Door : theme.FloorRemembered,
+                    TileKind.TrapSprung => lit ? theme.Trap : theme.FloorRemembered,
+                    TileKind.Floor or TileKind.TrapArmed => lit ? theme.FloorLit : theme.FloorRemembered,
+                    _ => lit ? theme.WallLit : theme.WallRemembered,
                 };
 
                 PrintOnMap(x + shakeX, y + shakeY, glyph, colour);

@@ -245,46 +245,36 @@ public sealed class FrameCapture
                 {
                     bool visible = run.Map.IsVisible(p);
 
-                    switch (run.Map[p])
+                    TileKind tile = run.Map[p];
+
+                    // One table of glyphs for the whole game, so a new tile
+                    // cannot be drawn here as a wall while the window draws it
+                    // properly. Only the colour letters are this tool's own.
+                    glyph = MapText.Glyph(tile);
+
+                    switch (tile)
                     {
                         case TileKind.StairsDown:
-                            glyph = '>';
-                            cell = CellKind.Stairs;
-                            stairs++;
-                            break;
-
                         case TileKind.StairsUp:
-                            glyph = '<';
                             cell = CellKind.Stairs;
                             stairs++;
                             break;
 
                         case TileKind.Door:
-                            glyph = '+';
                             cell = CellKind.Door;
                             break;
 
                         case TileKind.TrapSprung:
-                            glyph = '^';
                             cell = CellKind.Trap;
                             break;
 
-                        // An armed trap is the ground it hides under, here as
-                        // in the window. Drawing it would give it away.
-                        case TileKind.TrapArmed:
-                            glyph = '.';
-                            cell = visible ? CellKind.FloorLit : CellKind.FloorRemembered;
-                            if (visible) lit++; else remembered++;
-                            break;
-
                         case TileKind.Floor:
-                            glyph = '.';
+                        case TileKind.TrapArmed:
                             cell = visible ? CellKind.FloorLit : CellKind.FloorRemembered;
                             if (visible) lit++; else remembered++;
                             break;
 
                         default:
-                            glyph = '#';
                             cell = visible ? CellKind.WallLit : CellKind.WallRemembered;
                             wall++;
                             break;
