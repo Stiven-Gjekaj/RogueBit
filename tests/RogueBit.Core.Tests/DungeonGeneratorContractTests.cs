@@ -50,6 +50,13 @@ public class DungeonGeneratorContractTests
             Assert.True(map.IsWalkable(map.Entrance), $"seed {seed}: the entrance is not walkable");
             Assert.True(map.IsWalkable(map.StairsDown), $"seed {seed}: the stairs are not walkable");
             Assert.Equal(TileKind.StairsDown, map[map.StairsDown]);
+
+            // The two are never the same cell. A floor puts stairs up where the
+            // player arrives, so an entrance sitting on the stairs down would
+            // take one of the two away and strand the run on that floor.
+            Assert.True(
+                map.Entrance != map.StairsDown,
+                $"seed {seed}: the entrance is on the stairs down");
         }
     }
 

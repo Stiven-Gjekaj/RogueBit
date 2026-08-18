@@ -115,7 +115,7 @@ public class PathFinderTests
                 DungeonMap map = generator.Generate(50, 25, new SeededRandom(seed));
 
                 Assert.True(
-                    PathFinder.Find(map, map.Entrance, map.StairsDown).Count > 0 || map.Entrance == map.StairsDown,
+                    PathFinder.Find(map, map.Entrance, map.StairsDown).Count > 0,
                     $"{generator.Name} seed {seed}: the stairs cannot be reached from the entrance");
             }
         }
