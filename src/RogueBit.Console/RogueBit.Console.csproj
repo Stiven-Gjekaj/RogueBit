@@ -13,7 +13,7 @@
          this line the game compiles and then cannot start: the runtime has no
          MonoGame.Framework to load. The version has to match what the host was
          built against. -->
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
   </ItemGroup>
 
   <ItemGroup>
