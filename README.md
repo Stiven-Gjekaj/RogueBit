@@ -7,7 +7,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-222_passing-427819?style=for-the-badge" alt="222 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-245_passing-427819?style=for-the-badge" alt="245 tests passing"/>
 </p>
 
 <p align="center">
@@ -122,7 +122,7 @@ Run the tests with `dotnet test`.
 | Arrows, WASD, hjkl, numpad | Move, or attack whatever you walk into |
 | `.` or numpad 5 | Wait a turn |
 | `g` | Pick up what is under you |
-| `,` | Go down the stairs you are standing on |
+| `,` | Take the stairs you are standing on, up or down |
 | `i` | Open the pack, then a letter to use an item |
 | `s` | Save the run |
 | `r` | Start the same seed again |
@@ -151,6 +151,12 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
   down, so the first floor is always goblins.
 - **An ending.** Floor ten has no stairs and a warden twice the size of the one
   halfway down. Killing it wins the run and is worth far more than surviving.
+- **A way back up.** Every floor below the first has stairs where you came in,
+  and a floor you leave is the floor you find when you return: the same ground,
+  the same monsters still standing where you left them, and whatever you walked
+  past still lying there. Retreating to ground you have already cleared is a
+  real move, and the depth bonus is paid on how deep you got rather than where
+  you are standing, so turning back costs no points.
 - **Equipment.** A weapon slot and an armour slot, both reading straight through
   to the numbers combat uses.
 - **A message log** that counts a repeated line rather than letting a run of
@@ -194,7 +200,7 @@ scripts/                Builds assets/banner.svg from that capture
 ## Status
 
 Alpha. The game is playable from the first floor to the warden at the bottom.
-222 tests cover it: 206 against the rules and 16 against the effects the
+245 tests cover it: 229 against the rules and 16 against the effects the
 frontend draws. The window itself is compiled on three platforms but never run
 by continuous integration, because it needs a display.
 

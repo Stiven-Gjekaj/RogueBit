@@ -45,17 +45,45 @@ already produced a dungeon.
 `Snapshot()` and `Restore()` hand over the two state words, which is what lets a
 saved run carry on rather than start again.
 
+## Floors that stay put
+
+A floor is built once and then kept. `Run` holds every floor it has been on,
+by depth, and a `Floor` is the ground, the monsters and the items together
+rather than three lists that have to be kept in step by hand.
+
+This is what makes the stairs up worth having. Building the floor above again
+would put its monsters back, move the potion that was walked past, and make
+retreating free, because the ground behind would be new ground. Taking one out
+of store also draws nothing from the generator, which is what keeps a run that
+walks up and down equal to a run that walked straight down.
+`GoingBackToAFloorDrawsNothingFromTheDice` compares the state of the dice
+across a round trip and says so.
+
+Every floor below the first has stairs up on the cell the player arrives on.
+The generator is not told which depth it is building: it reports where the
+entrance is, and the run writes the tile, the same way it fills in the stairs
+down on the bottom floor. Coming up puts the player on the stairs down of the
+floor above, so climbing twice means crossing a floor in between.
+
+The depth bonus is paid on the deepest floor reached rather than the floor
+being stood on. The two were the same number while the dungeon only went down.
+
 ## Saving
 
-A save stores the floor as tiles, not as the seed it grew from. Regenerating
+A save stores every floor as tiles, not as the seed it grew from. Regenerating
 would be smaller, but it would tie every save to the exact behaviour of the
 generator, and a save that stops loading because somebody tuned a generator was
-never really written down. Three kilobytes buys independence from that.
+never really written down. Three kilobytes a floor buys independence from that.
+
+All of the floors are written, not only the one being stood on, because the
+player can climb back into any of them. Each carries where the player came in,
+which is where its stairs up are.
 
 The file is written beside the target and then moved over it, so a crash midway
 leaves the previous save whole rather than half of a new one. A load refuses a
-version it does not know, a damaged file, and a floor whose size does not match
-its own dimensions, because a save that cannot be trusted should not be played.
+version it does not know, a damaged file, a floor whose size does not match its
+own dimensions, and a save that names a depth it holds no floor for, because a
+save that cannot be trusted should not be played.
 
 A run that ends deletes its save. Otherwise loading is a way to undo dying.
 
@@ -86,6 +114,8 @@ Both generators satisfy one contract, checked over forty seeds in
 - exactly one walkable region, so no floor can strand the player
 - a wall all the way round the edge
 - an entrance and stairs, both on walkable ground
+- the entrance and the stairs never on the same cell, or the stairs up written
+  where the player arrives would take the stairs down away
 - the same floor from the same seed, and a different floor from a different one
 
 ### Binary space partition, odd floors

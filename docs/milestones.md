@@ -49,8 +49,11 @@ The floors are readable but plain. This milestone is about what is on them.
   same, because the only choice is which weapon to carry.
 - **Monsters that do something other than walk at you.** A monster that flees
   when hurt, or one that calls others, changes how a room is fought.
-- **A reason to go back up.** The dungeon only goes down, so there is never a
-  decision about whether to press on or retreat.
+- ~~**A reason to go back up.**~~ Done. Every floor below the first has stairs
+  where the player came in, and a floor that is left is the floor that is found
+  on the way back: the same ground, the same monsters, and whatever was walked
+  past still lying there. The depth bonus is paid on the deepest floor reached,
+  so retreating costs ground rather than points.
 - **A record of past runs**, so a seed can be compared against how it went last
   time.
 
