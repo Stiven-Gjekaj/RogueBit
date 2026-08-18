@@ -36,13 +36,15 @@ public class VictoryTests
             monsters.Add(boss);
         }
 
+        Floor floor = new() { Depth = depth, Map = map };
+        floor.Monsters.AddRange(monsters);
+
         return Run.Resume(
             random: new SeededRandom(1),
-            map: map,
             player: player,
-            monsters: monsters,
-            items: [],
+            floors: [floor],
             depth: depth,
+            deepestDepth: depth,
             turns: 0,
             log: []);
     }
@@ -129,13 +131,15 @@ public class VictoryTests
         Monster bystander = SpawnTable.Goblin(new Position(1, 2), GameRules.FinalDepth);
         bystander.BasePower = 100;
 
+        Floor floor = new() { Depth = GameRules.FinalDepth, Map = run.Map };
+        floor.Monsters.AddRange([.. run.Monsters, bystander]);
+
         Run staged = Run.Resume(
             random: new SeededRandom(1),
-            map: run.Map,
             player: run.Player,
-            monsters: [.. run.Monsters, bystander],
-            items: [],
+            floors: [floor],
             depth: GameRules.FinalDepth,
+            deepestDepth: GameRules.FinalDepth,
             turns: 0,
             log: []);
 

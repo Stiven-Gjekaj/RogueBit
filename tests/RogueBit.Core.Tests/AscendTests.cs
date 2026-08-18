@@ -168,11 +168,10 @@ public class AscendTests
 
         Run run = Run.Resume(
             random: new SeededRandom(1),
-            map: map,
             player: new Player(new Position(2, 1)),
-            monsters: [],
-            items: [],
+            floors: [new Floor { Depth = 2, Map = map }],
             depth: 2,
+            deepestDepth: 2,
             turns: 0,
             log: []);
 

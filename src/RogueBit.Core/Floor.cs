@@ -18,6 +18,9 @@ using RogueBit.Core.Map;
 /// </summary>
 public sealed class Floor
 {
+    /// <summary>How far down this floor is. The first floor is one.</summary>
+    public required int Depth { get; init; }
+
     public required DungeonMap Map { get; init; }
 
     /// <summary>What is alive on this floor.</summary>

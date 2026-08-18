@@ -74,6 +74,9 @@ public sealed class Run
     /// <summary>True when the run has ended, whichever way it ended.</summary>
     public bool IsOver => !Player.IsAlive || HasWon;
 
+    /// <summary>Every floor this run has been on, the shallowest first.</summary>
+    public IEnumerable<Floor> Floors => floors.Values.OrderBy(f => f.Depth);
+
     public IReadOnlyList<Monster> Monsters => floor.Monsters;
 
     public IReadOnlyList<Item> Items => floor.Items;
@@ -106,17 +109,16 @@ public sealed class Run
         Log.Add($"You enter the dungeon. Seed {seed}.", MessageKind.Good);
     }
 
-    private Run(SeededRandom random, DungeonMap map, Player player, int depth, int turns)
+    private Run(SeededRandom random, Player player, int depth, int deepestDepth, int turns)
     {
         Seed = random.Seed;
         Random = random;
-        floor = new Floor { Map = map };
         Player = player;
         Depth = depth;
 
-        // A resumed run knows how deep it is. Without a record of how deep it
-        // has been, that is the most that can be said.
-        DeepestDepth = depth;
+        // A run cannot have been shallower than the floor it is standing on,
+        // whatever it was told.
+        DeepestDepth = Math.Max(depth, deepestDepth);
         Turns = turns;
     }
 
@@ -124,27 +126,38 @@ public sealed class Run
     /// Rebuilds a run that was saved. Everything is handed in rather than
     /// generated, because a resumed run has to be the run that was left and not
     /// a fresh one on the same seed.
+    ///
+    /// Every floor the run had been on is handed in, not only the one the
+    /// player is standing on. A run that came back with one floor could walk
+    /// up a staircase into ground it had never seen, which is the one thing
+    /// keeping floors is meant to stop.
     /// </summary>
     public static Run Resume(
         SeededRandom random,
-        DungeonMap map,
         Player player,
-        IEnumerable<Monster> monsters,
-        IEnumerable<Item> items,
+        IEnumerable<Floor> floors,
         int depth,
+        int deepestDepth,
         int turns,
         IEnumerable<(string Text, MessageKind Kind, int Count)> log)
     {
         ArgumentNullException.ThrowIfNull(random);
-        ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(player);
-        ArgumentNullException.ThrowIfNull(monsters);
-        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(floors);
         ArgumentNullException.ThrowIfNull(log);
 
-        Run run = new(random, map, player, depth, turns);
-        run.floor.Monsters.AddRange(monsters);
-        run.floor.Items.AddRange(items);
+        Run run = new(random, player, depth, deepestDepth, turns);
+
+        foreach (Floor kept in floors) run.floors[kept.Depth] = kept;
+
+        if (!run.floors.TryGetValue(depth, out Floor? current))
+        {
+            throw new ArgumentException(
+                $"The run is on floor {depth} and no floor for that depth was handed in.",
+                nameof(floors));
+        }
+
+        run.floor = current;
 
         foreach ((string text, MessageKind kind, int count) in log)
         {
@@ -323,16 +336,16 @@ public sealed class Run
 
     private void EnterFloor(int depth, Arrival arrival)
     {
-        // Put the floor being left away before leaving it, so coming back to
-        // it finds it as it was rather than as it was first built.
-        if (Depth > 0) floors[Depth] = floor;
-
         Depth = depth;
         DeepestDepth = Math.Max(DeepestDepth, depth);
 
-        bool built = floors.TryGetValue(depth, out Floor? kept);
-        floor = built ? kept! : BuildFloor(depth);
+        if (!floors.TryGetValue(depth, out Floor? kept))
+        {
+            kept = BuildFloor(depth);
+            floors[depth] = kept;
+        }
 
+        floor = kept;
         Player.Position = arrival == Arrival.FromAbove ? Map.Entrance : Map.StairsDown;
         UpdateVision();
     }
@@ -354,14 +367,15 @@ public sealed class Run
         // open again. Below it, the player arrives on the stairs back up.
         if (depth > 1) map[map.Entrance] = TileKind.StairsUp;
 
-        floor = new Floor { Map = map };
-        PopulateFloor(depth);
-        return floor;
+        Floor built = new() { Depth = depth, Map = map };
+        PopulateFloor(built);
+        return built;
     }
 
-    private void PopulateFloor(int depth)
+    private void PopulateFloor(Floor built)
     {
-        List<Position> free = [.. Map.WalkableCells().Where(c => c != Map.Entrance)];
+        int depth = built.Depth;
+        List<Position> free = [.. built.Map.WalkableCells().Where(c => c != built.Map.Entrance)];
         Random.Shuffle(free);
 
         int next = 0;
@@ -369,30 +383,30 @@ public sealed class Run
 
         if (SpawnTable.HasBoss(depth) && Take() is { } bossCell)
         {
-            floor.Monsters.Add(SpawnTable.Boss(bossCell, depth));
+            built.Monsters.Add(SpawnTable.Boss(bossCell, depth));
         }
 
         for (int i = 0; i < SpawnTable.MonsterCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            floor.Monsters.Add(SpawnTable.CreateMonster(cell, depth, Random));
+            built.Monsters.Add(SpawnTable.CreateMonster(cell, depth, Random));
         }
 
         for (int i = 0; i < SpawnTable.CoinCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            floor.Items.Add(Item.Coin(cell, 1 + (depth / 3)));
+            built.Items.Add(Item.Coin(cell, 1 + (depth / 3)));
         }
 
         for (int i = 0; i < SpawnTable.PotionCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            floor.Items.Add(Item.Potion(cell));
+            built.Items.Add(Item.Potion(cell));
         }
 
         if (Take() is { } equipmentCell && SpawnTable.CreateEquipment(equipmentCell, depth, Random) is { } equipment)
         {
-            floor.Items.Add(equipment);
+            built.Items.Add(equipment);
         }
     }
 

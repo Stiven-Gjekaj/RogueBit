@@ -35,13 +35,16 @@ public class TurnEventTests
         Player player = new(playerAt ?? new Position(1, 1));
         if (playerDamage > 0) player.TakeDamage(playerDamage);
 
+        Floor floor = new() { Depth = 1, Map = map };
+        floor.Monsters.AddRange(monsters ?? []);
+        floor.Items.AddRange(items ?? []);
+
         return Run.Resume(
             random: new SeededRandom(1),
-            map: map,
             player: player,
-            monsters: monsters ?? [],
-            items: items ?? [],
+            floors: [floor],
             depth: 1,
+            deepestDepth: 1,
             turns: 0,
             log: []);
     }

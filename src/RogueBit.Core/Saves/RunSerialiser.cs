@@ -94,13 +94,16 @@ public static class RunSerialiser
             player.Inventory.TryEquip(armour);
         }
 
+        Floor floor = new() { Depth = data.Depth, Map = map };
+        floor.Monsters.AddRange(data.Monsters.Select(Restore));
+        floor.Items.AddRange(data.Items.Select(Restore));
+
         return Run.Resume(
             random: SeededRandom.Restore(data.Seed, data.RandomState, data.RandomIncrement),
-            map: map,
             player: player,
-            monsters: [.. data.Monsters.Select(Restore)],
-            items: [.. data.Items.Select(Restore)],
+            floors: [floor],
             depth: data.Depth,
+            deepestDepth: data.Depth,
             turns: data.Turns,
             log: data.Log.Select(m => (m.Text, Enum.Parse<MessageKind>(m.Kind), m.Count)));
     }
