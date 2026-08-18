@@ -29,6 +29,18 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 
 ---
 
+## The game running
+
+<div align="center">
+  <img src="assets/gameplay.gif" alt="The RogueBit window: a dungeon floor of rooms and corridors, the player moving through lit ground with remembered ground dimmed behind, a status line showing health, score, floor, turn and seed, and a message log recording each blow." width="623">
+</div>
+
+Captured from the real window, on seed 31337. The route was worked out by
+playing the same seed headlessly first, because the game is deterministic and
+the keys replay the same run.
+
+---
+
 ## Sample output
 
 Seed 31337, twenty six turns in. Lit ground is `.`, ground the player has seen
