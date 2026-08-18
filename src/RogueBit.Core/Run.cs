@@ -175,6 +175,34 @@ public sealed class Run
     public Monster? MonsterAt(Position position) =>
         floor.Monsters.FirstOrDefault(m => m.IsAlive && m.Position == position);
 
+    /// <summary>
+    /// The monster beside the player that is closest to dying, or nothing when
+    /// none is beside it.
+    ///
+    /// Beside means sharing an edge or a corner, which is what the player can
+    /// walk into and therefore what it can hit. The weakest is the one worth
+    /// reporting, because it is the one worth hitting: knowing a goblin has
+    /// two left is what decides between one more swing and running.
+    ///
+    /// The run decides which monster that is. It does not decide how, or
+    /// whether, anybody draws it.
+    /// </summary>
+    public Monster? MonsterWithinReach
+    {
+        get
+        {
+            Monster? weakest = null;
+
+            foreach (Position step in Directions.All)
+            {
+                if (MonsterAt(Player.Position + step) is not { } monster) continue;
+                if (weakest is null || monster.Health < weakest.Health) weakest = monster;
+            }
+
+            return weakest;
+        }
+    }
+
     /// <summary>The items lying on a cell.</summary>
     public IEnumerable<Item> ItemsAt(Position position) => floor.Items.Where(i => i.Position == position);
 

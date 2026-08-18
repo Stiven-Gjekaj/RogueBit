@@ -296,6 +296,15 @@ public sealed class GameScreen : SadConsole.Console
 
         this.Print(1, StatusRow, health, healthColour, Theme.Background);
         this.Print(1 + health.Length, StatusRow, rest + gear, theme.TextDim, Theme.Background);
+
+        // What is beside the player goes last, where it is next to nothing that
+        // moves, so the eye finds it in the same place every turn.
+        if (run.MonsterWithinReach is not { } beside) return;
+
+        string threat = $"   {beside.Name} {beside.Health}/{beside.MaxHealth}";
+        Color threatColour = beside.Behaviour == MonsterBehaviour.Boss ? theme.Boss : theme.Monster;
+
+        this.Print(1 + health.Length + rest.Length + gear.Length, StatusRow, threat, threatColour, Theme.Background);
     }
 
     private void DrawLog()
