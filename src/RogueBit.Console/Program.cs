@@ -25,6 +25,16 @@ public static class Program
             return 0;
         }
 
+        if (options.PrintFloor)
+        {
+            foreach (string row in FloorPrinter.Render(options.Seed ?? 0, options.Depth))
+            {
+                System.Console.WriteLine(row);
+            }
+
+            return 0;
+        }
+
         SaveSystem saves = new();
         Run? run = null;
 
