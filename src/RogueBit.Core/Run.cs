@@ -30,15 +30,15 @@ public sealed class Run
     public const int MapHeight = 34;
     public const int VisionRadius = 9;
 
-    private readonly List<Monster> monsters = [];
-    private readonly List<Item> items = [];
     private readonly List<TurnEvent> turnEvents = [];
+
+    private Floor floor = null!;
 
     public int Seed { get; }
 
     public SeededRandom Random { get; private set; }
 
-    public DungeonMap Map { get; private set; } = null!;
+    public DungeonMap Map => floor.Map;
 
     public Player Player { get; private set; } = null!;
 
@@ -57,9 +57,9 @@ public sealed class Run
     /// <summary>True when the run has ended, whichever way it ended.</summary>
     public bool IsOver => !Player.IsAlive || HasWon;
 
-    public IReadOnlyList<Monster> Monsters => monsters;
+    public IReadOnlyList<Monster> Monsters => floor.Monsters;
 
-    public IReadOnlyList<Item> Items => items;
+    public IReadOnlyList<Item> Items => floor.Items;
 
     /// <summary>
     /// What happened during the last action, for a frontend to draw. Cleared at
@@ -87,7 +87,7 @@ public sealed class Run
     {
         Seed = random.Seed;
         Random = random;
-        Map = map;
+        floor = new Floor { Map = map };
         Player = player;
         Depth = depth;
         Turns = turns;
@@ -116,8 +116,8 @@ public sealed class Run
         ArgumentNullException.ThrowIfNull(log);
 
         Run run = new(random, map, player, depth, turns);
-        run.monsters.AddRange(monsters);
-        run.items.AddRange(items);
+        run.floor.Monsters.AddRange(monsters);
+        run.floor.Items.AddRange(items);
 
         foreach ((string text, MessageKind kind, int count) in log)
         {
@@ -133,10 +133,10 @@ public sealed class Run
 
     /// <summary>The monster standing on a cell, if one is.</summary>
     public Monster? MonsterAt(Position position) =>
-        monsters.FirstOrDefault(m => m.IsAlive && m.Position == position);
+        floor.Monsters.FirstOrDefault(m => m.IsAlive && m.Position == position);
 
     /// <summary>The items lying on a cell.</summary>
-    public IEnumerable<Item> ItemsAt(Position position) => items.Where(i => i.Position == position);
+    public IEnumerable<Item> ItemsAt(Position position) => floor.Items.Where(i => i.Position == position);
 
     /// <summary>True when something is standing on a cell already.</summary>
     public bool IsOccupied(Position position) =>
@@ -201,7 +201,7 @@ public sealed class Run
         }
 
         BeginTurn();
-        items.Remove(item);
+        floor.Items.Remove(item);
         Log.Add($"You pick up {item.Name}.", MessageKind.Good);
         turnEvents.Add(new TurnEvent(TurnEventKind.Pickup, Player.Position));
         EndTurn();
@@ -274,18 +274,17 @@ public sealed class Run
             ? new BspDungeonGenerator()
             : new DrunkardWalkGenerator();
 
-        Map = generator.Generate(MapWidth, MapHeight, Random);
-        Player.Position = Map.Entrance;
+        DungeonMap map = generator.Generate(MapWidth, MapHeight, Random);
 
         // The bottom floor has nowhere to go on to, so its stairs are filled in.
-        if (GameRules.IsFinalDepth(depth)) Map[Map.StairsDown] = TileKind.Floor;
+        if (GameRules.IsFinalDepth(depth)) map[map.StairsDown] = TileKind.Floor;
 
         // The first floor is the way in from outside, and that way does not
         // open again. Below it, the player arrives on the stairs back up.
-        if (depth > 1) Map[Map.Entrance] = TileKind.StairsUp;
+        if (depth > 1) map[map.Entrance] = TileKind.StairsUp;
 
-        monsters.Clear();
-        items.Clear();
+        floor = new Floor { Map = map };
+        Player.Position = map.Entrance;
 
         PopulateFloor(depth);
         UpdateVision();
@@ -301,30 +300,30 @@ public sealed class Run
 
         if (SpawnTable.HasBoss(depth) && Take() is { } bossCell)
         {
-            monsters.Add(SpawnTable.Boss(bossCell, depth));
+            floor.Monsters.Add(SpawnTable.Boss(bossCell, depth));
         }
 
         for (int i = 0; i < SpawnTable.MonsterCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            monsters.Add(SpawnTable.CreateMonster(cell, depth, Random));
+            floor.Monsters.Add(SpawnTable.CreateMonster(cell, depth, Random));
         }
 
         for (int i = 0; i < SpawnTable.CoinCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            items.Add(Item.Coin(cell, 1 + (depth / 3)));
+            floor.Items.Add(Item.Coin(cell, 1 + (depth / 3)));
         }
 
         for (int i = 0; i < SpawnTable.PotionCount(depth); i++)
         {
             if (Take() is not { } cell) break;
-            items.Add(Item.Potion(cell));
+            floor.Items.Add(Item.Potion(cell));
         }
 
         if (Take() is { } equipmentCell && SpawnTable.CreateEquipment(equipmentCell, depth, Random) is { } equipment)
         {
-            items.Add(equipment);
+            floor.Items.Add(equipment);
         }
     }
 
@@ -344,7 +343,7 @@ public sealed class Run
 
         turnEvents.Add(new TurnEvent(TurnEventKind.Death, monster.Position));
         Player.TakeCoins(monster.CoinReward);
-        monsters.Remove(monster);
+        floor.Monsters.Remove(monster);
 
         if (monster.Behaviour == MonsterBehaviour.Boss && GameRules.IsFinalDepth(Depth))
         {
@@ -358,7 +357,7 @@ public sealed class Run
         foreach (Item coin in ItemsAt(Player.Position).Where(i => i.IsPickedUpByWalkingOver).ToList())
         {
             Player.TakeCoins(coin.Value);
-            items.Remove(coin);
+            floor.Items.Remove(coin);
         }
     }
 
@@ -405,7 +404,7 @@ public sealed class Run
     private void MonstersAct()
     {
         // Copy the list: a monster can die during the loop.
-        foreach (Monster monster in monsters.ToList())
+        foreach (Monster monster in floor.Monsters.ToList())
         {
             if (!monster.IsAlive || !Player.IsAlive) continue;
 
