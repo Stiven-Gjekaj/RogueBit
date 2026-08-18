@@ -8,6 +8,24 @@ Semantic Versioning.
 
 ### Added
 
+- **Doors.** The one tile that can be walked through and cannot be seen
+  through. They stand in the throat of a corridor where it meets a room, so a
+  corridor no longer shows what is waiting at the far end of it.
+- **Traps.** Drawn as ordinary ground until something stands on one, and then
+  spent and visible. They do not care who stood on them, so leading a monster
+  across one is a real move, and a monster killed that way pays nothing,
+  because the player did not strike the blow. More of them, hitting harder,
+  the deeper the floor.
+- **Movement in eight directions**, for the player and for the monsters
+  together, on the keypad and on yubn. A diagonal between two walls that meet
+  at a corner is refused for both.
+- **The whole message log**, on `m`. The panel shows six lines and the log
+  keeps a hundred, so ninety four of them could never be read.
+- **What the monster beside you has left**, at the end of the status line. The
+  weakest of the ones beside you, because that is the one worth hitting.
+- **A command that prints a floor without playing it**, so a bad map can be
+  reported by seed and depth rather than described.
+
 - **A way back up.** Every floor below the first has stairs on the cell the
   player arrives on, and the comma takes whichever staircase is underfoot
   rather than only the one going down.
@@ -20,6 +38,12 @@ Semantic Versioning.
 
 ### Changed
 
+- **The pack is grouped by kind with potions first**, and keeps arrival order
+  inside each group, so the letter for a potion stops moving every time
+  anything else is picked up.
+- **The A\* estimate moved from Manhattan to Chebyshev.** Manhattan overstates
+  the cost as soon as diagonals are allowed, and an estimate that overstates
+  gives a short walk rather than a shortest one.
 - **The depth bonus is paid on the deepest floor reached** rather than the
   floor being stood on. The two were the same number while the dungeon only
   went down. They are not now, and a score that fell as the player climbed
@@ -29,6 +53,17 @@ Semantic Versioning.
   into one built on the spot. The file version goes to two, and a version one
   save is refused: it does not record where the player came in, so its floor
   has nowhere to put the stairs back up.
+
+### Fixed
+
+- **Escape closes the pack instead of quitting the game.** It was read before
+  anything asked whether an overlay was open, so closing the pack saved the run
+  and shut the game down. The branch meant to close it could never run.
+- **A swift monster stops when it dies.** It took both of its steps whether or
+  not it survived the first, which nothing could reach until a trap gave a
+  monster a way to die on its own turn.
+- **A floor with doors survives a save.** The save format wrote every tile it
+  did not know as a wall.
 
 ## 0.1.2-alpha
 

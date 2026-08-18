@@ -7,7 +7,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-245_passing-427819?style=for-the-badge" alt="245 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-319_passing-427819?style=for-the-badge" alt="319 tests passing"/>
 </p>
 
 <p align="center">
@@ -107,6 +107,8 @@ dotnet run --project src/RogueBit.Console -- --seed 31337
 | --- | --- |
 | `--seed <number>` | Plays a named dungeon. The same seed replays the same run. |
 | `--continue` | Picks up the saved run, if there is one. |
+| `--print-floor` | Prints a floor as text and exits. No window opens. |
+| `--depth <number>` | Which floor to print, 1 to 10. Only with `--print-floor`. |
 | `--colour-blind` | Uses a palette that does not rely on red against green. |
 | `--no-effects` | Turns off the particles and the screen shake. |
 | `--help` | Prints the options and exits. |
@@ -120,15 +122,20 @@ Run the tests with `dotnet test`.
 | Keys | Action |
 | --- | --- |
 | Arrows, WASD, hjkl, numpad | Move, or attack whatever you walk into |
+| `y` `u` `b` `n`, numpad 7 9 1 3 | Move diagonally |
 | `.` or numpad 5 | Wait a turn |
 | `g` | Pick up what is under you |
 | `,` | Take the stairs you are standing on, up or down |
 | `i` | Open the pack, then a letter to use an item |
+| `m` | Read back through the whole log |
 | `s` | Save the run |
 | `r` | Start the same seed again |
-| `Escape` | Save and leave |
+| `Escape` | Close what is open, or save and leave |
 
 Coins are taken by walking over them. Everything else has to be picked up.
+
+A diagonal between two walls that meet at a corner is refused, for the player
+and for the monsters alike. Sliding through solid rock is not a move.
 
 Leaving with `Escape` writes the run, so `--continue` picks it up where you
 stopped. A run that ends is removed, so dying cannot be undone by loading.
@@ -142,6 +149,12 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
   against the same contract over forty seeds.
 - **Field of view with memory.** Recursive shadowcasting, with ground you have
   seen staying on the map dimmed once you walk away from it.
+- **Doors that block sight but not movement.** The one tile in the game where
+  those two disagree. A corridor no longer shows you what is waiting at the far
+  end of it.
+- **Hidden traps.** Drawn as ordinary ground until something stands on one, and
+  they do not care who that was, so leading a jackal across one is a real move.
+  More of them, hitting harder, the deeper you go.
 - **Four kinds of monster.** Goblins chase. Jackals take two steps for each of
   yours. Archers keep their distance and shoot along a clear line. A warden
   stands on every fifth floor and hits twice as hard once it is below half
@@ -160,7 +173,11 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
 - **Equipment.** A weapon slot and an armour slot, both reading straight through
   to the numbers combat uses.
 - **A message log** that counts a repeated line rather than letting a run of
-  misses push everything else off the panel.
+  misses push everything else off the panel, and `m` to read back through all
+  hundred lines of it rather than the six the panel shows.
+- **A pack that keeps its order**, grouped by kind with potions first, so the
+  letter for a potion does not move every time you pick something up.
+- **Movement in eight directions**, for the monsters as well as for you.
 - **Saving and resuming.** The floor, the pack, what you have explored and the
   exact state of the dice all come back, so a resumed run plays on rather than
   replaying the seed.
@@ -200,8 +217,8 @@ scripts/                Builds assets/banner.svg from that capture
 ## Status
 
 Alpha. The game is playable from the first floor to the warden at the bottom.
-245 tests cover it: 229 against the rules and 16 against the effects the
-frontend draws. The window itself is compiled on three platforms but never run
+319 tests cover it: 275 against the rules and 44 against the frontend, which
+covers the effects, the scrolling of the log and the command line. The window itself is compiled on three platforms but never run
 by continuous integration, because it needs a display.
 
 ## Licence

@@ -45,6 +45,22 @@ already produced a dungeon.
 `Snapshot()` and `Restore()` hand over the two state words, which is what lets a
 saved run carry on rather than start again.
 
+## Moving in eight directions
+
+A diagonal step costs the same as a straight one, so Chebyshev distance is both
+the true distance and the estimate A* uses. Manhattan was right while the
+walker moved four ways and overstates the cost at once on eight, and an
+estimate that overstates gives a short walk rather than a shortest one. That is
+not theoretical: left on Manhattan, roughly one generated floor in six gets a
+longer walk than breadth first finds, by as much as seven steps.
+`MatchesBreadthFirstOnEveryFloorItIsGiven` compares the two over eighty floors.
+
+A diagonal between two walls that meet at a corner is refused. Brushing one
+wall is allowed, because forbidding that makes diagonals useless indoors. The
+rule sits on the map rather than in the player or in the pathfinder, because
+those two have to agree: a monster that could cut a corner the player could not
+would be a monster that catches somebody who did everything right.
+
 ## Floors that stay put
 
 A floor is built once and then kept. `Run` holds every floor it has been on,
@@ -117,6 +133,15 @@ Both generators satisfy one contract, checked over forty seeds in
 - the entrance and the stairs never on the same cell, or the stairs up written
   where the player arrives would take the stairs down away
 - the same floor from the same seed, and a different floor from a different one
+
+Doors go in afterwards, on floors of rooms. A doorway is a walkable cell that
+belongs to no room, has exactly one walkable neighbour that does, and exactly
+one that does not: the throat of a corridor where it reaches a wall. That is
+the only place narrow enough for a door to be worth anything and the only place
+one can stand without cutting an open space off from itself.
+
+Traps go in last, on plain ground that nothing else took, so one never hides
+under the stairs or under the cell the player arrives on.
 
 ### Binary space partition, odd floors
 

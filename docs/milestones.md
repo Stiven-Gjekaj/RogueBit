@@ -28,20 +28,21 @@ Everything before this point did not compile. The whole of it was rewritten.
 
 ## v0.2: a dungeon worth reading
 
-The floors are readable but plain. This milestone is about what is on them.
+Shipped. The floors were readable but plain, and this milestone was about what
+is on them.
 
-- **Doors** that block sight but not movement, which is the first tile to
-  separate the two. See issue 1.
-- **Traps**, so walking into unexplored ground is a decision. See issue 2.
-- **Diagonal movement**, for the player and for the monsters together. See
-  issue 3.
-- **A better view of what is happening**: reading back through the message log
-  (issue 4), and seeing what a monster has left when it is next to you
-  (issue 7).
-- **A pack that keeps its order**, so the key for a potion does not move every
-  time something is picked up. See issue 6.
-- **A way to look at a floor without playing it**, which makes a bad map easy
-  to report. See issue 5.
+- **Doors** that block sight but not movement, the first tile to separate the
+  two. They stand in the throat of a corridor where it meets a room, so walking
+  down one no longer shows what is waiting at the far end.
+- **Traps**, drawn as ordinary ground until something stands on one. They do
+  not care who that was, so leading a monster across one is a real move, and
+  there are more of them hitting harder the deeper the floor.
+- **Diagonal movement**, for the player and for the monsters together. A
+  diagonal between two walls that meet at a corner is refused for both.
+- **A better view of what is happening**: the whole log rather than the last
+  six lines, and what the monster beside you has left.
+- **A pack that keeps its order**, grouped by kind with potions first.
+- **A way to look at a floor without playing it**, with `--print-floor`.
 
 ## v0.3: a run worth repeating
 
