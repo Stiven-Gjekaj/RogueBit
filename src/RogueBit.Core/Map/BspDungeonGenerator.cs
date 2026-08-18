@@ -49,7 +49,47 @@ public sealed class BspDungeonGenerator : IDungeonGenerator
         map.StairsDown = rooms[^1].Centre;
         map[map.StairsDown] = TileKind.StairsDown;
 
+        PlaceDoors(map, rooms);
+
         return map;
+    }
+
+    /// <summary>
+    /// Puts a door where a corridor arrives at a room.
+    ///
+    /// A doorway is a walkable cell that belongs to no room, has exactly one
+    /// walkable neighbour that does belong to one, and exactly one walkable
+    /// neighbour that does not. That is the throat of a corridor at the point
+    /// it reaches a wall: the only place narrow enough for a door to be worth
+    /// anything, and the only place one can stand without walling off an open
+    /// space from itself.
+    ///
+    /// The entrance and the stairs are left alone. A player cannot see the
+    /// ground it is standing on through a door it is standing in.
+    /// </summary>
+    private static void PlaceDoors(DungeonMap map, List<Rectangle> rooms)
+    {
+        bool InARoom(Position cell) => rooms.Any(room => room.Contains(cell));
+
+        foreach (Position cell in map.WalkableCells().ToList())
+        {
+            if (cell == map.Entrance || cell == map.StairsDown) continue;
+            if (InARoom(cell)) continue;
+
+            int intoARoom = 0;
+            int alongTheCorridor = 0;
+
+            foreach (Position step in Directions.Cardinal)
+            {
+                Position neighbour = cell + step;
+                if (!map.IsWalkable(neighbour)) continue;
+
+                if (InARoom(neighbour)) intoARoom++;
+                else alongTheCorridor++;
+            }
+
+            if (intoARoom == 1 && alongTheCorridor == 1) map[cell] = TileKind.Door;
+        }
     }
 
     /// <summary>Splits a block, or carves a room when it cannot be split again.</summary>

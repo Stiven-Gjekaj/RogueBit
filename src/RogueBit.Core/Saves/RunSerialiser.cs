@@ -11,6 +11,7 @@ public static class RunSerialiser
     private const char Ground = '.';
     private const char Down = '>';
     private const char Up = '<';
+    private const char Doorway = '+';
     private const char Seen = '1';
     private const char Unseen = '0';
 
@@ -107,6 +108,7 @@ public static class RunSerialiser
                     Ground => TileKind.Floor,
                     Down => TileKind.StairsDown,
                     Up => TileKind.StairsUp,
+                    Doorway => TileKind.Door,
                     _ => TileKind.Wall,
                 };
 
@@ -198,6 +200,7 @@ public static class RunSerialiser
                     TileKind.Floor => Ground,
                     TileKind.StairsDown => Down,
                     TileKind.StairsUp => Up,
+                    TileKind.Door => Doorway,
                     _ => Wall,
                 };
             }

@@ -15,6 +15,8 @@ public static class MapBuilder
     public const char Wall = '#';
     public const char Floor = '.';
     public const char Stairs = '>';
+    public const char StairsUp = '<';
+    public const char Door = '+';
 
     public static DungeonMap From(params string[] rows)
     {
@@ -36,6 +38,8 @@ public static class MapBuilder
                 {
                     Floor => TileKind.Floor,
                     Stairs => TileKind.StairsDown,
+                    StairsUp => TileKind.StairsUp,
+                    Door => TileKind.Door,
                     Wall => TileKind.Wall,
                     char other => throw new ArgumentException($"'{other}' is not a tile this builder knows."),
                 };
@@ -59,6 +63,8 @@ public static class MapBuilder
                 {
                     TileKind.Floor => Floor,
                     TileKind.StairsDown => Stairs,
+                    TileKind.StairsUp => StairsUp,
+                    TileKind.Door => Door,
                     _ => Wall,
                 };
             }
