@@ -154,6 +154,33 @@ public class AscendTests
         Assert.Equal(deep, run.Score);
     }
 
+    [Fact]
+    public void WalkingOntoTheStairsUpSaysWhatTheyAre()
+    {
+        DungeonMap map = MapBuilder.From(
+            "######",
+            "#....#",
+            "######");
+        map.Entrance = new Position(1, 1);
+        map[map.Entrance] = TileKind.StairsUp;
+        map.StairsDown = new Position(4, 1);
+        map[map.StairsDown] = TileKind.StairsDown;
+
+        Run run = Run.Resume(
+            random: new SeededRandom(1),
+            map: map,
+            player: new Player(new Position(2, 1)),
+            monsters: [],
+            items: [],
+            depth: 2,
+            turns: 0,
+            log: []);
+
+        run.Move(Directions.West);
+
+        Assert.Contains(run.Log.Messages, m => m.Text == "A staircase leads back up from here.");
+    }
+
     private static void Descend(Run run)
     {
         run.Player.Position = run.Map.StairsDown;

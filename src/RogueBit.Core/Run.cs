@@ -441,6 +441,10 @@ public sealed class Run
         {
             Log.Add("A staircase leads down from here.");
         }
+        else if (Map[Player.Position] == TileKind.StairsUp)
+        {
+            Log.Add("A staircase leads back up from here.");
+        }
     }
 
     /// <summary>
