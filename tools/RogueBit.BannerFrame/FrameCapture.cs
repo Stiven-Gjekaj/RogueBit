@@ -195,6 +195,7 @@ public sealed class FrameCapture
         string[] rows = new string[height];
         string[] kinds = new string[height];
         int lit = 0, remembered = 0, wall = 0, monsters = 0, items = 0, stairs = 0, unseen = 0;
+        int doors = 0, traps = 0;
 
         for (int y = 0; y < height; y++)
         {
@@ -262,10 +263,12 @@ public sealed class FrameCapture
 
                         case TileKind.Door:
                             cell = CellKind.Door;
+                            doors++;
                             break;
 
                         case TileKind.TrapSprung:
                             cell = CellKind.Trap;
+                            traps++;
                             break;
 
                         case TileKind.Floor:
@@ -295,8 +298,13 @@ public sealed class FrameCapture
         if (monsters < 1 || lit < 80 || wall < 45 || remembered < 55) return null;
 
         // Darkness is atmosphere rather than dead space, so it costs little.
+        //
+        // A doorway is worth as much as an item. It is the thing that makes a
+        // corridor read as a way into somewhere rather than a line of dots, and
+        // a banner that did not show one would be a banner of an older game.
         int score = (lit * 10) + (remembered * 3) + (wall * 3)
-                  + (monsters * 200) + (items * 100) + (stairs * 90) - (unseen * 2);
+                  + (monsters * 200) + (items * 100) + (stairs * 90)
+                  + (doors * 120) + (traps * 60) - (unseen * 2);
 
         return new Frame(score, rows, kinds, Describe(run));
     }
