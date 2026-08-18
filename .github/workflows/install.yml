@@ -1,0 +1,96 @@
+name: install
+
+# Runs the install scripts on all three platforms, against a real release.
+#
+# This is not part of ci. It needs the network and it needs a published release,
+# so a failure here can mean github is having a bad morning rather than that the
+# change under test is wrong, and that is not a thing to put in front of every
+# push.
+#
+# It is worth running on its own, though. These scripts run on other people's
+# machines, and they are the one thing in this repository that nothing else
+# exercises. This also notices a release that cannot be installed, which is a
+# different fault from a release that cannot be built.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release to install. Empty means the newest."
+        required: false
+        type: string
+  schedule:
+    # Weekly, on Monday, after Dependabot has had its turn.
+    - cron: "30 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  unix:
+    name: install on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            sh scripts/install.sh --version "${{ inputs.version }}"
+          else
+            sh scripts/install.sh
+          fi
+
+      - name: The launcher is where the script said it would be
+        run: |
+          set -euo pipefail
+          test -x "$HOME/.local/bin/roguebit"
+          "$HOME/.local/bin/roguebit" --help
+
+      - name: Uninstalling takes it away again
+        run: |
+          set -euo pipefail
+          sh scripts/install.sh --uninstall
+          test ! -e "$HOME/.local/bin/roguebit"
+
+  windows:
+    name: install on windows-latest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install
+        shell: pwsh
+        run: |
+          if ('${{ inputs.version }}') {
+            ./scripts/install.ps1 -Version '${{ inputs.version }}'
+          } else {
+            ./scripts/install.ps1
+          }
+
+      - name: The game is where the script said it would be
+        shell: pwsh
+        run: |
+          $program = Join-Path $env:LOCALAPPDATA 'Programs\RogueBit\RogueBit.exe'
+          if (-not (Test-Path $program)) { throw "$program is missing" }
+          & $program --help
+          if ($LASTEXITCODE -ne 0) { throw "RogueBit.exe would not start" }
+
+      - name: The install directory reached the PATH
+        shell: pwsh
+        run: |
+          $wanted = Join-Path $env:LOCALAPPDATA 'Programs\RogueBit'
+          $path = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if (($path -split ';') -notcontains $wanted) { throw "$wanted is not on the user PATH" }
+
+      - name: Uninstalling takes it away again
+        shell: pwsh
+        run: |
+          ./scripts/install.ps1 -Uninstall
+          $gone = Join-Path $env:LOCALAPPDATA 'Programs\RogueBit'
+          if (Test-Path $gone) { throw "$gone is still there" }
