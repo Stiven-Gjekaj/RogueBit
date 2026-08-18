@@ -4,6 +4,41 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
+## 0.1.2-alpha
+
+Housekeeping. No rule changed, so a seed plays the run it played in
+0.1.1-alpha.
+
+### Changed
+
+- **MonoGame moves to 3.8.5.1.** It carries the native libraries the window
+  opens with, so of everything raised here it is the only one that reaches the
+  archives. It was checked by publishing the game, running the output through
+  the publish check, and then starting it under a software OpenGL context and
+  capturing a frame. A green build is not evidence that a window opens, which
+  is what 0.1.0-alpha taught.
+- **The test tooling moves to Microsoft.NET.Test.Sdk 18.9.0, xunit 2.9.3 and
+  xunit.runner.visualstudio 4.0.0.** None of it ships. All 222 tests pass on
+  it.
+- **The workflow actions move up**, five of them, four crossing more than one
+  major version. The artifact actions only run during a release, so release.yml
+  was dispatched with no tag to build everything and publish nothing. That is
+  what the tag switch exists for. The release action only runs when there is a
+  tag, so this version is the first thing that exercises it.
+
+### Added
+
+- **A recording of the window running**, at the top of the README, with the
+  tools that captured it. The route through the floor was worked out by playing
+  the same seed with no display attached, because the game is deterministic and
+  the same keys replay the same run.
+- **A roadmap**, which says what 0.2 is meant to hold and which says what is not
+  planned.
+- **Dependabot**, watching the packages and the actions once a week. The routine
+  bumps are grouped into one pull request each. SadConsole and MonoGame are left
+  out of the groups, because a package the window draws through is not a routine
+  bump.
+
 ## 0.1.1-alpha
 
 The first version that runs. 0.1.0-alpha builds and then throws before it draws
