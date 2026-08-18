@@ -23,6 +23,9 @@ public enum TurnEventKind
 
     /// <summary>The player went down a floor.</summary>
     Descend,
+
+    /// <summary>The player went back up a floor.</summary>
+    Ascend,
 }
 
 /// <summary>

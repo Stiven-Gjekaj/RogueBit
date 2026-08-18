@@ -32,6 +32,17 @@ public sealed class Run
 
     private readonly List<TurnEvent> turnEvents = [];
 
+    /// <summary>
+    /// Every floor the run has been on, by depth.
+    ///
+    /// A floor is kept rather than built again, because building it again is
+    /// not the same floor. The monsters would be back, the potion the player
+    /// walked past would be somewhere else, and turning round would cost
+    /// nothing, because the ground behind would be new ground. Keeping it is
+    /// what makes going back up a decision instead of a reset.
+    /// </summary>
+    private readonly Dictionary<int, Floor> floors = [];
+
     private Floor floor = null!;
 
     public int Seed { get; }
@@ -79,7 +90,7 @@ public sealed class Run
         Random = new SeededRandom(seed);
         Player = new Player(new Position(0, 0));
 
-        EnterFloor(1);
+        EnterFloor(1, Arrival.FromAbove);
         Log.Add($"You enter the dungeon. Seed {seed}.", MessageKind.Good);
     }
 
@@ -240,6 +251,16 @@ public sealed class Run
         return ActionResult.Took;
     }
 
+    /// <summary>Which way the player came onto a floor.</summary>
+    private enum Arrival
+    {
+        /// <summary>Down the stairs from the floor above.</summary>
+        FromAbove,
+
+        /// <summary>Up the stairs from the floor below.</summary>
+        FromBelow,
+    }
+
     /// <summary>Goes down the stairs, if the player is standing on them.</summary>
     public ActionResult Descend()
     {
@@ -258,16 +279,49 @@ public sealed class Run
         }
 
         BeginTurn();
-        EnterFloor(Depth + 1);
+        EnterFloor(Depth + 1, Arrival.FromAbove);
         Log.Add($"You descend to floor {Depth}.", MessageKind.Good);
         turnEvents.Add(new TurnEvent(TurnEventKind.Descend, Player.Position));
         return ActionResult.Took;
     }
 
-    private void EnterFloor(int depth)
+    /// <summary>Goes back up the stairs, if the player is standing on them.</summary>
+    public ActionResult Ascend()
     {
+        if (IsOver) return ActionResult.Refused;
+
+        // The first floor has no such tile anywhere, so this one test also
+        // covers the way out of the dungeon being shut.
+        if (Map[Player.Position] != TileKind.StairsUp)
+        {
+            Log.Add("There are no stairs up here.");
+            return ActionResult.Refused;
+        }
+
+        BeginTurn();
+        EnterFloor(Depth - 1, Arrival.FromBelow);
+        Log.Add($"You climb back to floor {Depth}.", MessageKind.Good);
+        turnEvents.Add(new TurnEvent(TurnEventKind.Ascend, Player.Position));
+        return ActionResult.Took;
+    }
+
+    private void EnterFloor(int depth, Arrival arrival)
+    {
+        // Put the floor being left away before leaving it, so coming back to
+        // it finds it as it was rather than as it was first built.
+        if (Depth > 0) floors[Depth] = floor;
+
         Depth = depth;
 
+        bool built = floors.TryGetValue(depth, out Floor? kept);
+        floor = built ? kept! : BuildFloor(depth);
+
+        Player.Position = arrival == Arrival.FromAbove ? Map.Entrance : Map.StairsDown;
+        UpdateVision();
+    }
+
+    private Floor BuildFloor(int depth)
+    {
         // Alternate the two generators, so a run does not look the same all the
         // way down. The choice is a function of depth, so a seed still replays.
         IDungeonGenerator generator = depth % 2 == 1
@@ -284,10 +338,8 @@ public sealed class Run
         if (depth > 1) map[map.Entrance] = TileKind.StairsUp;
 
         floor = new Floor { Map = map };
-        Player.Position = map.Entrance;
-
         PopulateFloor(depth);
-        UpdateVision();
+        return floor;
     }
 
     private void PopulateFloor(int depth)
