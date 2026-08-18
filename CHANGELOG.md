@@ -25,6 +25,13 @@ Semantic Versioning.
   weakest of the ones beside you, because that is the one worth hitting.
 - **A command that prints a floor without playing it**, so a bad map can be
   reported by seed and depth rather than described.
+- **An install script**, for Linux and macOS in `sh` and for Windows in
+  PowerShell. One line, no .NET, no clone, no build: it works out which build
+  this machine wants, checks the download against the checksums published with
+  the release, refuses anything that does not match, and starts the game once
+  to prove the build runs before it reports success. Both are attached to every
+  release as well as living on the branch, and `--uninstall` takes it away
+  again.
 
 - **A way back up.** Every floor below the first has stairs on the cell the
   player arrives on, and the comma takes whichever staircase is underfoot

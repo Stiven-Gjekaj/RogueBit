@@ -89,6 +89,31 @@ what the core says is true and draws it.
 
 ## Quick Start
 
+One line. Nothing has to be installed first: the releases hold self contained
+builds, so there is no .NET to fetch, nothing to clone and nothing to compile.
+
+**Linux and macOS**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Stiven-Gjekaj/RogueBit/main/scripts/install.sh | sh
+```
+
+**Windows**
+
+```powershell
+irm https://raw.githubusercontent.com/Stiven-Gjekaj/RogueBit/main/scripts/install.ps1 | iex
+```
+
+Then `roguebit`. The script checks the download against the checksums published
+with the release, refuses to install anything that does not match, and starts
+the game once to prove the build runs before it tells you it worked. Run it
+again with `--uninstall` to take it away.
+
+Both scripts are attached to every release as well, if you would rather read one
+before running it than take it off a branch.
+
+### From source
+
 Prerequisites: the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```sh
