@@ -435,8 +435,22 @@ public sealed class Run
 
         if (!result.Killed) return;
 
+        MonsterDies(monster, toThePlayersHand: true);
+    }
+
+    /// <summary>
+    /// Everything that follows a monster dying, wherever the blow came from.
+    ///
+    /// This is one method because the ending depends on it. A warden that died
+    /// some other way and skipped this would leave a run on the bottom floor
+    /// with nothing left to kill and no way to win.
+    /// </summary>
+    private void MonsterDies(Monster monster, bool toThePlayersHand)
+    {
         turnEvents.Add(new TurnEvent(TurnEventKind.Death, monster.Position));
-        Player.TakeCoins(monster.CoinReward);
+
+        if (toThePlayersHand) Player.TakeCoins(monster.CoinReward);
+
         floor.Monsters.Remove(monster);
 
         if (monster.Behaviour == MonsterBehaviour.Boss && GameRules.IsFinalDepth(Depth))
