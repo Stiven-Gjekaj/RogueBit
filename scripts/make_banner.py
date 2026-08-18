@@ -29,10 +29,31 @@ character the subset does not have:
 import base64
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 STATE = json.loads((ROOT / "assets" / "banner-frame.json").read_text())
+
+
+def version() -> str:
+    """The version the project stamps into what it builds.
+
+    Read rather than written down here. It used to be written down twice, and
+    both copies still said 0.1.0-alpha two releases later.
+    """
+    props = (ROOT / "Directory.Build.props").read_text()
+    found = re.search(r"<Version>(.*?)</Version>", props)
+
+    if found is None:
+        raise SystemExit("Directory.Build.props has no <Version>.")
+
+    return found.group(1)
+
+
+# How many tests the suite holds. Nothing in the repository states this, so it
+# is the one number here that has to be moved by hand.
+TESTS = 328
 
 
 def _trim(state: dict) -> dict:
@@ -97,8 +118,14 @@ TRACKING = CELL_W - ADVANCE
 SOURCE_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 
 # What the committed subset covers. Rebuilding the font rewrites this list.
+# Every glyph MapText can draw a tile with. Naming them here rather than
+# letting the captured frame decide means a frame that happens to hold a tile
+# the last one did not is drawn rather than refused, and a new tile costs one
+# font rebuild rather than a failed banner build to find out about.
+TILE_GLYPHS = "#.><+^"
+
 FONT_COVERS = (
-    " !\"#$'()*+,-./0123456789:>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_"
+    " !\"#$'()*+,-./0123456789:<>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_"
     "abcdefghijklmnopqrstuvwxyz\u00b7\u2026"
 )
 
@@ -113,6 +140,7 @@ def characters_used() -> set[str]:
         used |= set(line["text"])
     used |= set("HP SCORE FLOOR TURN SEED abcdefghijklmnopqrstuvwxyz")
     used |= set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./-_:$#@!>,()+*'\"[]\u2026\u00b7")
+    used |= set(TILE_GLYPHS)
     return used
 
 
@@ -342,6 +370,8 @@ def build() -> str:
         ("g", "goblin", MONSTER),
         ("$", "coin", COIN),
         ("!", "potion", POTION),
+        ("+", "door", DOOR),
+        ("^", "trap", TRAP),
         (">", "stairs", STAIRS),
     ]
     legend_x = LEFT_X
@@ -354,7 +384,7 @@ def build() -> str:
             f'<text x="{legend_x + 15:.1f}" y="304" class="mono" font-size="12" fill="{DIM}">'
             f'{label}</text>'
         )
-        legend_x += 15 + len(label) * 7.3 + 22
+        legend_x += 15 + len(label) * 7.3 + 16
 
     chip_y = 348
     chip_x = LEFT_X
@@ -372,7 +402,7 @@ def build() -> str:
 
     parts.append(
         f'<text x="{LEFT_X}" y="437" class="mono" font-size="12" fill="{DIM}">'
-        f'v0.1.0-alpha  \u00b7  MIT  \u00b7  196 tests  \u00b7  the core does no drawing</text>'
+        f'v{version()}  \u00b7  MIT  \u00b7  {TESTS} tests  \u00b7  the core does no drawing</text>'
     )
 
     # ---- right: the game ----
@@ -405,7 +435,7 @@ def build() -> str:
         f'stroke="{EDGE}" stroke-width="1"/>'
     )
     parts.append(
-        f'<text x="{hud_x:.1f}" y="76" class="lbl" fill="{PLAYER}">ROGUEBIT v0.1.0-alpha</text>'
+        f'<text x="{hud_x:.1f}" y="76" class="lbl" fill="{PLAYER}">ROGUEBIT v{version()}</text>'
     )
 
     row_y = 112
