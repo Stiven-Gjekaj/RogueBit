@@ -36,8 +36,43 @@ public sealed class Inventory
 
         if (IsFull) return false;
 
-        items.Add(item);
+        Insert(item);
         return true;
+    }
+
+    /// <summary>
+    /// Where a kind sits in the pack. Potions come first, because they are
+    /// what somebody reaches for in a hurry.
+    /// </summary>
+    private static int Rank(ItemKind kind) => kind switch
+    {
+        ItemKind.Potion => 0,
+        ItemKind.Weapon => 1,
+        _ => 2,
+    };
+
+    /// <summary>
+    /// Puts an item into its group, behind everything already in that group.
+    ///
+    /// The pack is kept in order rather than sorted when it is read. Reading it
+    /// happens every frame the pack is open, and the letter a player presses
+    /// for a potion has to be the same letter each time it is opened, which is
+    /// a property of the pack rather than of whoever draws it.
+    /// </summary>
+    private void Insert(Item item)
+    {
+        int rank = Rank(item.Kind);
+        int at = items.Count;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (Rank(items[i].Kind) <= rank) continue;
+
+            at = i;
+            break;
+        }
+
+        items.Insert(at, item);
     }
 
     public bool Remove(Item item) => items.Remove(item);
@@ -60,7 +95,7 @@ public sealed class Inventory
         if (item.Kind == ItemKind.Weapon) Weapon = item;
         else Armour = item;
 
-        if (displaced is not null) items.Add(displaced);
+        if (displaced is not null) Insert(displaced);
 
         return true;
     }
@@ -80,7 +115,7 @@ public sealed class Inventory
         if (slot == ItemKind.Weapon) Weapon = null;
         else Armour = null;
 
-        items.Add(worn);
+        Insert(worn);
         return true;
     }
 

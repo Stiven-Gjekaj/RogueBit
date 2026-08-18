@@ -9,6 +9,98 @@ public class InventoryTests
     private static readonly Position Origin = new(0, 0);
 
     [Fact]
+    public void KeepsThePackGroupedByKindWithPotionsFirst()
+    {
+        Inventory pack = new();
+
+        // Picked up in the least helpful order there is.
+        Item mail = Item.Armour(Origin, "chain mail", 2);
+        Item sword = Item.Weapon(Origin, "a short sword", 3);
+        Item potion = Item.Potion(Origin);
+
+        pack.TryAdd(mail);
+        pack.TryAdd(sword);
+        pack.TryAdd(potion);
+
+        Assert.Equal([potion, sword, mail], pack.Items);
+    }
+
+    [Fact]
+    public void KeepsThingsOfOneKindInTheOrderTheyWerePickedUp()
+    {
+        Inventory pack = new();
+
+        Item first = Item.Potion(Origin, 3);
+        Item second = Item.Potion(Origin, 5);
+        Item third = Item.Potion(Origin, 7);
+
+        pack.TryAdd(first);
+        pack.TryAdd(second);
+        pack.TryAdd(third);
+
+        Assert.Equal([first, second, third], pack.Items);
+    }
+
+    [Fact]
+    public void TheLetterForAPotionDoesNotMoveWhenSomethingElseIsPickedUp()
+    {
+        // This is the whole point. A potion at 'a' that becomes 'b' because a
+        // sword was picked up is how somebody drinks a sword.
+        Inventory pack = new();
+        Item potion = Item.Potion(Origin);
+
+        pack.TryAdd(potion);
+        Assert.Same(potion, pack.Items[0]);
+
+        pack.TryAdd(Item.Weapon(Origin, "a war axe", 3));
+        pack.TryAdd(Item.Armour(Origin, "a scale hauberk", 3));
+
+        Assert.Same(potion, pack.Items[0]);
+    }
+
+    [Fact]
+    public void PuttingSomethingOnAndTakingItOffDoesNotShuffleThePack()
+    {
+        Inventory pack = new();
+
+        Item potion = Item.Potion(Origin);
+        Item sword = Item.Weapon(Origin, "a short sword", 3);
+        Item mail = Item.Armour(Origin, "chain mail", 2);
+
+        pack.TryAdd(potion);
+        pack.TryAdd(sword);
+        pack.TryAdd(mail);
+
+        Item[] before = [.. pack.Items];
+
+        pack.TryEquip(sword);
+        pack.TryUnequip(ItemKind.Weapon);
+
+        Assert.Equal(before, pack.Items);
+    }
+
+    [Fact]
+    public void ADisplacedWeaponGoesBackWithTheWeapons()
+    {
+        Inventory pack = new();
+
+        Item knife = Item.Weapon(Origin, "a rusty knife", 1);
+        Item sword = Item.Weapon(Origin, "a short sword", 3);
+        Item mail = Item.Armour(Origin, "chain mail", 2);
+
+        pack.TryAdd(knife);
+        pack.TryAdd(sword);
+        pack.TryAdd(mail);
+        pack.TryEquip(knife);
+
+        // The sword is worn and the knife comes back. It belongs with the
+        // weapons, ahead of the armour, not on the end of the list.
+        pack.TryEquip(sword);
+
+        Assert.Equal([knife, mail], pack.Items);
+    }
+
+    [Fact]
     public void TakesAnItemUpToItsCapacity()
     {
         Inventory inventory = new(capacity: 2);
