@@ -22,6 +22,7 @@ public static class CellKind
     public const char Equipment = 'E';
     public const char Stairs = 'S';
     public const char Door = 'D';
+    public const char Trap = 'T';
     public const char FloorLit = 'f';
     public const char FloorRemembered = 'r';
     public const char WallLit = 'w';
@@ -261,6 +262,19 @@ public sealed class FrameCapture
                         case TileKind.Door:
                             glyph = '+';
                             cell = CellKind.Door;
+                            break;
+
+                        case TileKind.TrapSprung:
+                            glyph = '^';
+                            cell = CellKind.Trap;
+                            break;
+
+                        // An armed trap is the ground it hides under, here as
+                        // in the window. Drawing it would give it away.
+                        case TileKind.TrapArmed:
+                            glyph = '.';
+                            cell = visible ? CellKind.FloorLit : CellKind.FloorRemembered;
+                            if (visible) lit++; else remembered++;
                             break;
 
                         case TileKind.Floor:

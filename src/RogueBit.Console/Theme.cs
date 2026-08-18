@@ -25,6 +25,8 @@ public sealed class Theme
 
     public required Color Door { get; init; }
 
+    public required Color Trap { get; init; }
+
     public required Color Player { get; init; }
 
     public required Color Monster { get; init; }
@@ -58,6 +60,7 @@ public sealed class Theme
         FloorRemembered = new Color(70, 76, 82),
         Stairs = new Color(240, 200, 90),
         Door = new Color(186, 140, 96),
+        Trap = new Color(206, 92, 120),
         Player = new Color(90, 214, 226),
         Monster = new Color(126, 196, 108),
         Boss = new Color(226, 96, 78),
@@ -84,6 +87,7 @@ public sealed class Theme
         FloorRemembered = new Color(72, 78, 84),
         Stairs = new Color(248, 232, 120),
         Door = new Color(196, 166, 120),
+        Trap = new Color(160, 190, 250),
         Player = new Color(120, 220, 240),
         Monster = new Color(232, 180, 60),
         Boss = new Color(120, 150, 250),

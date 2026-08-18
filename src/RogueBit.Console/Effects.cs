@@ -112,6 +112,18 @@ public sealed class Effects
                     Rise(turn.Where, '.', theme.Stairs, 8);
                     break;
 
+                case TurnEventKind.Ascend:
+                    Rise(turn.Where, '\'', theme.Stairs, 8);
+                    break;
+
+                case TurnEventKind.Trap:
+                    // The same sparks a blow throws, in the trap's own colour,
+                    // and the same shake when the player is the one caught.
+                    Burst(turn.Where, '*', theme.Trap, 4 + Math.Min(6, turn.Magnitude));
+
+                    if (turn.AgainstPlayer) shake = Math.Max(shake, 0.6 + (turn.Magnitude * 0.22));
+                    break;
+
                 default:
                     break;
             }

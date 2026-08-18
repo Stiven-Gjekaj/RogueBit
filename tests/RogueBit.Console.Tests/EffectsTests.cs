@@ -17,6 +17,9 @@ public class EffectsTests
     private static TurnEvent Hit(bool onPlayer, int damage = 4) =>
         new(TurnEventKind.Hit, new Position(5, 5), damage, onPlayer);
 
+    private static TurnEvent Trap(bool onPlayer, int damage = 4) =>
+        new(TurnEventKind.Trap, new Position(5, 5), damage, onPlayer);
+
     /// <summary>Runs the clock until nothing is left, or gives up.</summary>
     private static double Settle(Effects effects, double limit = 10.0)
     {
@@ -135,6 +138,32 @@ public class EffectsTests
         Assert.True(
             FurthestShake(player) > FurthestShake(monster),
             "the player dying should move the screen further than a monster dying");
+    }
+
+    [Fact]
+    public void ATrapThrowsWhatABlowThrows()
+    {
+        Effects trap = New();
+        Effects blow = New();
+
+        trap.Play([Trap(onPlayer: true)]);
+        blow.Play([Hit(onPlayer: true)]);
+
+        Assert.NotEmpty(trap.Particles);
+        Assert.Equal(blow.Particles.Count, trap.Particles.Count);
+    }
+
+    [Fact]
+    public void OnlyATrapThePlayerSteppedOnShakesTheScreen()
+    {
+        Effects onPlayer = New();
+        onPlayer.Play([Trap(onPlayer: true)]);
+
+        Effects onMonster = New();
+        onMonster.Play([Trap(onPlayer: false)]);
+
+        Assert.True(FurthestShake(onPlayer) > 0);
+        Assert.Equal(0, FurthestShake(onMonster));
     }
 
     [Fact]

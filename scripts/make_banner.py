@@ -64,6 +64,7 @@ FLOOR_LIT = "#B0B8BE"
 FLOOR_DIM = "#464C52"
 STAIRS = "#F0C85A"
 DOOR = "#BA8C60"
+TRAP = "#CE5C78"
 PLAYER = "#5AD6E2"
 MONSTER = "#7EC46C"
 BOSS = "#E2604E"
@@ -78,7 +79,7 @@ WARN = "#EEBE44"
 
 KIND_COLOUR = {
     "P": PLAYER, "M": MONSTER, "B": BOSS, "C": COIN, "O": POTION, "E": GEAR,
-    "S": STAIRS, "D": DOOR, "f": FLOOR_LIT, "r": FLOOR_DIM, "w": WALL_LIT, "d": WALL_DIM,
+    "S": STAIRS, "D": DOOR, "T": TRAP, "f": FLOOR_LIT, "r": FLOOR_DIM, "w": WALL_LIT, "d": WALL_DIM,
     " ": BG,
 }
 LOG_COLOUR = {"Good": GOOD, "Bad": BAD, "Warning": WARN, "Normal": TEXT}

@@ -208,6 +208,11 @@ public sealed class GameScreen : SadConsole.Console
                     TileKind.StairsDown => ('>', lit ? theme.Stairs : theme.FloorRemembered),
                     TileKind.StairsUp => ('<', lit ? theme.Stairs : theme.FloorRemembered),
                     TileKind.Door => ('+', lit ? theme.Door : theme.FloorRemembered),
+                    TileKind.TrapSprung => ('^', lit ? theme.Trap : theme.FloorRemembered),
+
+                    // An armed trap is drawn as the ground it is hidden under.
+                    // A trap the player can see is not a trap.
+                    TileKind.TrapArmed => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
                     TileKind.Floor => ('.', lit ? theme.FloorLit : theme.FloorRemembered),
                     _ => ('#', lit ? theme.WallLit : theme.WallRemembered),
                 };
