@@ -1,5 +1,10 @@
 version: 2
 
+# Every label named below has to exist in the repository before Dependabot can
+# use it. Left to itself Dependabot makes its own label, but a label it is told
+# to use and cannot find stops it labelling anything, and it says so in a
+# comment on the pull request rather than carrying on.
+
 updates:
   - package-ecosystem: nuget
     directory: /
