@@ -7,7 +7,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-319_passing-427819?style=for-the-badge" alt="319 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-328_passing-427819?style=for-the-badge" alt="328 tests passing"/>
 </p>
 
 <p align="center">
@@ -217,7 +217,7 @@ scripts/                Builds assets/banner.svg from that capture
 ## Status
 
 Alpha. The game is playable from the first floor to the warden at the bottom.
-319 tests cover it: 275 against the rules and 44 against the frontend, which
+328 tests cover it: 284 against the rules and 44 against the frontend, which
 covers the effects, the scrolling of the log and the command line. The window itself is compiled on three platforms but never run
 by continuous integration, because it needs a display.
 
