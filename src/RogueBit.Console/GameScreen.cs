@@ -33,8 +33,14 @@ public sealed class GameScreen : SadConsole.Console
     private readonly SaveSystem saves;
     private readonly bool effectsEnabled;
 
+    /// <summary>How many lines the whole log panel shows at once.</summary>
+    public const int LogPageLines = 20;
+
+    private readonly LogScroll logScroll = new(LogPageLines);
+
     private Run run;
     private bool showingInventory;
+    private bool showingLog;
     private bool scoreRecorded;
 
     public GameScreen(Run run, Theme theme, SaveSystem saves, bool effectsEnabled = true)
@@ -85,6 +91,13 @@ public sealed class GameScreen : SadConsole.Console
                 return true;
             }
 
+            if (showingLog)
+            {
+                showingLog = false;
+                Draw();
+                return true;
+            }
+
             // Leaving keeps the run, so the game can be picked up again.
             if (!run.IsOver) saves.Write(RunSerialiser.Capture(run));
             Environment.Exit(0);
@@ -110,6 +123,13 @@ public sealed class GameScreen : SadConsole.Console
         if (showingInventory)
         {
             HandleInventoryKeys(keyboard);
+            Draw();
+            return true;
+        }
+
+        if (showingLog)
+        {
+            HandleLogKeys(keyboard);
             Draw();
             return true;
         }
@@ -153,6 +173,14 @@ public sealed class GameScreen : SadConsole.Console
             }
         }
 
+        if (keyboard.IsKeyPressed(Keys.M))
+        {
+            showingLog = true;
+            logScroll.ToTheNewest();
+            Draw();
+            return;
+        }
+
         if (keyboard.IsKeyPressed(Keys.OemPeriod) || keyboard.IsKeyPressed(Keys.NumPad5)) run.Wait();
         else if (keyboard.IsKeyPressed(Keys.G)) run.PickUp();
         else if (keyboard.IsKeyPressed(Keys.OemComma)) run.TakeStairs();
@@ -163,6 +191,28 @@ public sealed class GameScreen : SadConsole.Console
             run = run.Restart();
             effects.Clear();
         }
+    }
+
+    /// <summary>
+    /// Moves through the whole log. No turn passes while this is open, so the
+    /// keys that would act are not read at all.
+    /// </summary>
+    private void HandleLogKeys(Keyboard keyboard)
+    {
+        int total = run.Log.Count;
+
+        if (keyboard.IsKeyPressed(Keys.M))
+        {
+            showingLog = false;
+            return;
+        }
+
+        if (keyboard.IsKeyPressed(Keys.Up) || keyboard.IsKeyPressed(Keys.K)) logScroll.Older(1, total);
+        else if (keyboard.IsKeyPressed(Keys.Down) || keyboard.IsKeyPressed(Keys.J)) logScroll.Newer(1, total);
+        else if (keyboard.IsKeyPressed(Keys.PageUp)) logScroll.PageOlder(total);
+        else if (keyboard.IsKeyPressed(Keys.PageDown)) logScroll.PageNewer(total);
+        else if (keyboard.IsKeyPressed(Keys.Home)) logScroll.ToTheOldest(total);
+        else if (keyboard.IsKeyPressed(Keys.End)) logScroll.ToTheNewest();
     }
 
     private void HandleInventoryKeys(Keyboard keyboard)
@@ -199,6 +249,7 @@ public sealed class GameScreen : SadConsole.Console
         DrawLog();
 
         if (showingInventory) DrawInventory();
+        if (showingLog) DrawWholeLog();
         if (run.IsOver) DrawGameOver();
     }
 
@@ -353,6 +404,55 @@ public sealed class GameScreen : SadConsole.Console
         }
 
         this.Print(left + 2, top + height - 1, "letter to use, i to close", theme.TextDim, new Color(22, 26, 30));
+    }
+
+    /// <summary>
+    /// The whole log, rather than the last six lines the panel holds.
+    ///
+    /// The log keeps a hundred lines and the panel shows six, so ninety four of
+    /// them could never be read. If several things happen in one turn the
+    /// earlier ones were gone before anybody saw them.
+    /// </summary>
+    private void DrawWholeLog()
+    {
+        Color background = new(22, 26, 30);
+        const int left = 6;
+        const int top = 2;
+        const int width = ScreenWidth - 12;
+        const int height = LogPageLines + 5;
+
+        IReadOnlyList<LogMessage> page = logScroll.Page(run.Log.Messages);
+        int total = run.Log.Count;
+
+        this.Fill(new Area(left, top, width, height), theme.Text, background, 0);
+        this.Print(left + 2, top + 1, "Log", theme.Stairs, background);
+
+        if (total == 0)
+        {
+            this.Print(left + 2, top + 3, "Nothing has happened yet.", theme.TextDim, background);
+        }
+
+        for (int i = 0; i < page.Count; i++)
+        {
+            LogMessage message = page[i];
+            string text = message.Display;
+            if (text.Length > width - 4) text = text[..(width - 4)];
+
+            this.Print(left + 2, top + 3 + i, text, theme.ForMessage(message.Kind), background);
+        }
+
+        string where = total <= LogPageLines
+            ? "all of it"
+            : logScroll.AtTheNewest ? "the newest"
+            : logScroll.AtTheOldest(total) ? "the oldest"
+            : $"{total - logScroll.Offset} of {total}";
+
+        this.Print(
+            left + 2,
+            top + height - 1,
+            $"{where}, arrows to move, m to close",
+            theme.TextDim,
+            background);
     }
 
     private void DrawGameOver()
