@@ -191,6 +191,27 @@ public class RunTests
     }
 
     [Fact]
+    public void TheFirstFloorHasNoWayBackUp()
+    {
+        Run run = new(seed: 1);
+
+        Assert.DoesNotContain(
+            run.Map.WalkableCells(),
+            c => run.Map[c] == TileKind.StairsUp);
+    }
+
+    [Fact]
+    public void GoingDownLandsThePlayerOnTheStairsBackUp()
+    {
+        Run run = new(seed: 1);
+
+        Assert.True(StandOnStairsAndDescend(run));
+
+        Assert.Equal(TileKind.StairsUp, run.Map[run.Player.Position]);
+        Assert.Equal(run.Map.Entrance, run.Player.Position);
+    }
+
+    [Fact]
     public void ThePlayerCanSeeTheGroundItStandsOn()
     {
         Run run = new(seed: 9);

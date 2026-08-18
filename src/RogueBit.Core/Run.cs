@@ -280,6 +280,10 @@ public sealed class Run
         // The bottom floor has nowhere to go on to, so its stairs are filled in.
         if (GameRules.IsFinalDepth(depth)) Map[Map.StairsDown] = TileKind.Floor;
 
+        // The first floor is the way in from outside, and that way does not
+        // open again. Below it, the player arrives on the stairs back up.
+        if (depth > 1) Map[Map.Entrance] = TileKind.StairsUp;
+
         monsters.Clear();
         items.Clear();
 
