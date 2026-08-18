@@ -24,6 +24,20 @@ public static class SpawnTable
     /// </summary>
     public static int PotionCount(int depth) => Math.Max(1, 5 - (depth / 3));
 
+    /// <summary>
+    /// How many traps are hidden on a floor. This rises with depth like
+    /// everything else here, so walking into ground you have not seen costs
+    /// more the further down you are.
+    /// </summary>
+    public static int TrapCount(int depth) => 2 + (depth / 2);
+
+    /// <summary>
+    /// What one trap takes off whoever steps on it. A trap is an ambush and
+    /// not a fight, so this stays below what a monster of the same depth hits
+    /// for.
+    /// </summary>
+    public static int TrapDamage(int depth) => 2 + (depth / 2);
+
     /// <summary>True when this floor holds a boss.</summary>
     public static bool HasBoss(int depth) => depth % 5 == 0 || GameRules.IsFinalDepth(depth);
 

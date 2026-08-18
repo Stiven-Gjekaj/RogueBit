@@ -26,6 +26,9 @@ public enum TurnEventKind
 
     /// <summary>The player went back up a floor.</summary>
     Ascend,
+
+    /// <summary>A hidden trap went off.</summary>
+    Trap,
 }
 
 /// <summary>

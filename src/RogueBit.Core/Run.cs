@@ -205,8 +205,14 @@ public sealed class Run
 
         BeginTurn();
         Player.Position = target;
-        TakeCoinsUnderfoot();
-        AnnounceWhatIsUnderfoot();
+        SpringTrapUnder(Player, isPlayer: true);
+
+        if (Player.IsAlive)
+        {
+            TakeCoinsUnderfoot();
+            AnnounceWhatIsUnderfoot();
+        }
+
         EndTurn();
         return ActionResult.Took;
     }
@@ -419,6 +425,16 @@ public sealed class Run
         {
             built.Items.Add(equipment);
         }
+
+        // Traps are written into the ground rather than laid on it, so they
+        // are the last thing placed and they take cells nothing else wanted.
+        for (int i = 0; i < SpawnTable.TrapCount(depth); i++)
+        {
+            if (Take() is not { } cell) break;
+            if (built.Map[cell] != TileKind.Floor) continue;
+
+            built.Map[cell] = TileKind.TrapArmed;
+        }
     }
 
     private void AttackMonster(Monster monster)
@@ -520,7 +536,9 @@ public sealed class Run
         {
             if (!monster.IsAlive || !Player.IsAlive) continue;
 
-            for (int step = 0; step < monster.Speed && Player.IsAlive; step++)
+            // A monster can now die during its own turn, by walking onto a
+            // trap, so its second step is not a given.
+            for (int step = 0; step < monster.Speed && Player.IsAlive && monster.IsAlive; step++)
             {
                 TakeMonsterTurn(monster);
             }
@@ -546,7 +564,47 @@ public sealed class Run
         }
 
         Position? next = PathFinder.NextStep(Map, monster.Position, Player.Position, IsOccupied);
-        if (next is { } cell && !IsOccupied(cell)) monster.Position = cell;
+        if (next is not { } cell || IsOccupied(cell)) return;
+
+        monster.Position = cell;
+        SpringTrapUnder(monster, isPlayer: false);
+    }
+
+    /// <summary>
+    /// Fires the trap under an actor, if the cell holds one still armed.
+    ///
+    /// A trap does not care who stood on it, which is what makes leading a
+    /// monster across one worth doing. It goes off once and is then spent and
+    /// visible, so the floor teaches the player where it was.
+    /// </summary>
+    private void SpringTrapUnder(Actor actor, bool isPlayer)
+    {
+        if (Map[actor.Position] != TileKind.TrapArmed) return;
+
+        Map[actor.Position] = TileKind.TrapSprung;
+
+        int damage = actor.TakeDamage(SpawnTable.TrapDamage(Depth));
+
+        Log.Add(
+            isPlayer
+                ? $"A trap goes off under you for {damage}."
+                : $"A trap goes off under {actor.Name} for {damage}.",
+            isPlayer ? MessageKind.Bad : MessageKind.Good);
+
+        turnEvents.Add(new TurnEvent(TurnEventKind.Trap, actor.Position, damage, AgainstPlayer: isPlayer));
+
+        if (actor.IsAlive) return;
+
+        if (isPlayer)
+        {
+            turnEvents.Add(new TurnEvent(TurnEventKind.Death, actor.Position, AgainstPlayer: true));
+        }
+        else if (actor is Monster caught)
+        {
+            // Nothing is paid for this one. The player did not strike the
+            // blow, and paying for it would turn trap hunting into a living.
+            MonsterDies(caught, toThePlayersHand: false);
+        }
     }
 
     private bool TryShoot(Monster archer, int distance)
