@@ -4,6 +4,32 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- **A way back up.** Every floor below the first has stairs on the cell the
+  player arrives on, and the comma takes whichever staircase is underfoot
+  rather than only the one going down.
+- **Floors that stay put.** A floor is built once and kept. Going back up
+  reaches the floor that was left, with the same ground, the same monsters
+  standing where they were, whatever was walked past still lying there, and
+  what the player had explored still remembered. Taking a floor out of store
+  draws nothing from the generator, so a run that walks up and down is the
+  same run as one that walked straight down.
+
+### Changed
+
+- **The depth bonus is paid on the deepest floor reached** rather than the
+  floor being stood on. The two were the same number while the dungeon only
+  went down. They are not now, and a score that fell as the player climbed
+  would make retreating a decision about points rather than about surviving.
+- **The save holds every floor the run has been on**, each with where the
+  player came in, so a resumed run can climb into a floor it saw rather than
+  into one built on the spot. The file version goes to two, and a version one
+  save is refused: it does not record where the player came in, so its floor
+  has nowhere to put the stairs back up.
+
 ## 0.1.2-alpha
 
 Housekeeping. No rule changed, so a seed plays the run it played in
