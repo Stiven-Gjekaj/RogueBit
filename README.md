@@ -173,6 +173,7 @@ scripts/                Builds assets/banner.svg from that capture
 ## Documentation
 
 - [Architecture and algorithms](docs/architecture.md)
+- [Milestones and roadmap](docs/milestones.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 
