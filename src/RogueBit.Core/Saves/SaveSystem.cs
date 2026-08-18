@@ -63,8 +63,15 @@ public sealed class SaveSystem
 
             if (data is null) return null;
             if (data.Version != SaveData.CurrentVersion) return null;
-            if (data.Tiles.Length != data.Width * data.Height) return null;
-            if (data.Explored.Length != data.Width * data.Height) return null;
+            if (data.Floors.Count == 0) return null;
+            if (data.Floors.All(f => f.Depth != data.Depth)) return null;
+
+            foreach (SavedFloor floor in data.Floors)
+            {
+                int cells = floor.Width * floor.Height;
+                if (floor.Tiles.Length != cells) return null;
+                if (floor.Explored.Length != cells) return null;
+            }
 
             return data;
         }

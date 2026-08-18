@@ -8,8 +8,9 @@ using RogueBit.Core.Map;
 public static class RunSerialiser
 {
     private const char Wall = '#';
-    private const char Floor = '.';
-    private const char Stairs = '>';
+    private const char Ground = '.';
+    private const char Down = '>';
+    private const char Up = '<';
     private const char Seen = '1';
     private const char Unseen = '0';
 
@@ -23,23 +24,17 @@ public static class RunSerialiser
         {
             Seed = seed,
             Depth = run.Depth,
+            DeepestDepth = run.DeepestDepth,
             Turns = run.Turns,
             RandomState = state,
             RandomIncrement = increment,
-            Width = run.Map.Width,
-            Height = run.Map.Height,
-            Tiles = WriteTiles(run.Map),
-            Explored = WriteExplored(run.Map),
-            StairsX = run.Map.StairsDown.X,
-            StairsY = run.Map.StairsDown.Y,
             Player = new SavedPlayer(
                 run.Player.Position.X,
                 run.Player.Position.Y,
                 run.Player.Health,
                 run.Player.MaxHealth,
                 run.Player.Coins),
-            Monsters = [.. run.Monsters.Where(m => m.IsAlive).Select(Capture)],
-            Items = [.. run.Items.Select(Capture)],
+            Floors = [.. run.Floors.Select(Capture)],
             Carried = [.. run.Inventory.Items.Select(Capture)],
             Weapon = run.Inventory.Weapon is { } weapon ? Capture(weapon) : null,
             Armour = run.Inventory.Armour is { } armour ? Capture(armour) : null,
@@ -47,32 +42,24 @@ public static class RunSerialiser
         };
     }
 
+    private static SavedFloor Capture(Floor floor) => new()
+    {
+        Depth = floor.Depth,
+        Width = floor.Map.Width,
+        Height = floor.Map.Height,
+        Tiles = WriteTiles(floor.Map),
+        Explored = WriteExplored(floor.Map),
+        EntranceX = floor.Map.Entrance.X,
+        EntranceY = floor.Map.Entrance.Y,
+        StairsX = floor.Map.StairsDown.X,
+        StairsY = floor.Map.StairsDown.Y,
+        Monsters = [.. floor.Monsters.Where(m => m.IsAlive).Select(Capture)],
+        Items = [.. floor.Items.Select(Capture)],
+    };
+
     public static Run Restore(SaveData data)
     {
         ArgumentNullException.ThrowIfNull(data);
-
-        DungeonMap map = new(data.Width, data.Height);
-
-        for (int y = 0; y < data.Height; y++)
-        {
-            for (int x = 0; x < data.Width; x++)
-            {
-                int index = (y * data.Width) + x;
-                Position cell = new(x, y);
-
-                map[cell] = data.Tiles[index] switch
-                {
-                    Floor => TileKind.Floor,
-                    Stairs => TileKind.StairsDown,
-                    _ => TileKind.Wall,
-                };
-
-                if (data.Explored[index] == Seen) map.MarkVisible(cell);
-            }
-        }
-
-        map.StairsDown = new Position(data.StairsX, data.StairsY);
-        map.Entrance = new Position(data.Player.X, data.Player.Y);
 
         Player player = new(new Position(data.Player.X, data.Player.Y));
         player.TakeCoins(data.Player.Coins);
@@ -94,18 +81,51 @@ public static class RunSerialiser
             player.Inventory.TryEquip(armour);
         }
 
-        Floor floor = new() { Depth = data.Depth, Map = map };
-        floor.Monsters.AddRange(data.Monsters.Select(Restore));
-        floor.Items.AddRange(data.Items.Select(Restore));
-
         return Run.Resume(
             random: SeededRandom.Restore(data.Seed, data.RandomState, data.RandomIncrement),
             player: player,
-            floors: [floor],
+            floors: [.. data.Floors.Select(Restore)],
             depth: data.Depth,
-            deepestDepth: data.Depth,
+            deepestDepth: data.DeepestDepth,
             turns: data.Turns,
             log: data.Log.Select(m => (m.Text, Enum.Parse<MessageKind>(m.Kind), m.Count)));
+    }
+
+    private static Floor Restore(SavedFloor saved)
+    {
+        DungeonMap map = new(saved.Width, saved.Height);
+
+        for (int y = 0; y < saved.Height; y++)
+        {
+            for (int x = 0; x < saved.Width; x++)
+            {
+                int index = (y * saved.Width) + x;
+                Position cell = new(x, y);
+
+                map[cell] = saved.Tiles[index] switch
+                {
+                    Ground => TileKind.Floor,
+                    Down => TileKind.StairsDown,
+                    Up => TileKind.StairsUp,
+                    _ => TileKind.Wall,
+                };
+
+                if (saved.Explored[index] == Seen) map.MarkVisible(cell);
+            }
+        }
+
+        map.StairsDown = new Position(saved.StairsX, saved.StairsY);
+        map.Entrance = new Position(saved.EntranceX, saved.EntranceY);
+
+        // Everything comes back unlit. The run computes what the player can see
+        // from where it is standing as soon as it is put back together, and a
+        // floor it is not standing on is not lit by anything.
+        map.ClearVisible();
+
+        Floor floor = new() { Depth = saved.Depth, Map = map };
+        floor.Monsters.AddRange(saved.Monsters.Select(Restore));
+        floor.Items.AddRange(saved.Items.Select(Restore));
+        return floor;
     }
 
     private static SavedMonster Capture(Monster monster) => new(
@@ -175,8 +195,9 @@ public static class RunSerialiser
             {
                 cells[(y * map.Width) + x] = map[new Position(x, y)] switch
                 {
-                    TileKind.Floor => Floor,
-                    TileKind.StairsDown => Stairs,
+                    TileKind.Floor => Ground,
+                    TileKind.StairsDown => Down,
+                    TileKind.StairsUp => Up,
                     _ => Wall,
                 };
             }

@@ -35,6 +35,30 @@ public sealed class SaveLoadTests : IDisposable
         return run;
     }
 
+    /// <summary>Walks down to a floor, taking the stairs rather than hunting for them.</summary>
+    private static Run DeepRun(int to, int seed = 4242)
+    {
+        Run run = new(seed);
+
+        while (run.Depth < to)
+        {
+            run.Player.Position = run.Map.StairsDown;
+            Assert.Equal(ActionResult.Took, run.Descend());
+        }
+
+        return run;
+    }
+
+    /// <summary>
+    /// Walks to the stairs up and takes them. Coming up leaves the player on
+    /// the stairs down, so climbing twice means crossing the floor between.
+    /// </summary>
+    private static void Climb(Run run)
+    {
+        run.Player.Position = run.Map.Entrance;
+        Assert.Equal(ActionResult.Took, run.Ascend());
+    }
+
     [Fact]
     public void AResumedRunHasTheSameStateAsTheOneThatWasSaved()
     {
@@ -196,6 +220,62 @@ public sealed class SaveLoadTests : IDisposable
     }
 
     [Fact]
+    public void EveryFloorTheRunHasBeenOnComesBack()
+    {
+        Run original = DeepRun(to: 3);
+        List<string[]> before = [.. original.Floors.Select(f => MapBuilder.Render(f.Map))];
+
+        Assert.Equal(3, before.Count);
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(before, resumed.Floors.Select(f => MapBuilder.Render(f.Map)));
+        Assert.Equal([1, 2, 3], resumed.Floors.Select(f => f.Depth));
+    }
+
+    [Fact]
+    public void AResumedRunCanClimbBackIntoAFloorItSaw()
+    {
+        Run original = DeepRun(to: 3);
+        string[] second = MapBuilder.Render(original.Floors.Single(f => f.Depth == 2).Map);
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+        Assert.Equal(ActionResult.Took, resumed.Ascend());
+
+        Assert.Equal(2, resumed.Depth);
+        Assert.Equal(second, MapBuilder.Render(resumed.Map));
+    }
+
+    [Fact]
+    public void TheDeepestFloorReachedComesBack()
+    {
+        Run original = DeepRun(to: 3);
+        Climb(original);
+        Climb(original);
+
+        Assert.Equal(1, original.Depth);
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(1, resumed.Depth);
+        Assert.Equal(3, resumed.DeepestDepth);
+        Assert.Equal(original.Score, resumed.Score);
+    }
+
+    [Fact]
+    public void WhatWasLeftLyingOnAFloorAboveComesBack()
+    {
+        Run original = DeepRun(to: 2);
+        List<Position> above = [.. original.Floors.Single(f => f.Depth == 1).Items.Select(i => i.Position)];
+
+        Assert.NotEmpty(above);
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.Equal(above, resumed.Floors.Single(f => f.Depth == 1).Items.Select(i => i.Position));
+    }
+
+    [Fact]
     public void ReadingWhenThereIsNoSaveGivesNothing()
     {
         Assert.Null(System.Read());
@@ -227,8 +307,22 @@ public sealed class SaveLoadTests : IDisposable
     public void ASaveWhoseFloorIsTheWrongSizeIsRefused()
     {
         SaveSystem saves = System;
-        SaveData data = RunSerialiser.Capture(PlayedRun()) with { Tiles = "##" };
+        SaveData captured = RunSerialiser.Capture(PlayedRun());
+        SaveData data = captured with
+        {
+            Floors = [.. captured.Floors.Select(f => f with { Tiles = "##" })],
+        };
         saves.Write(data);
+
+        Assert.Null(saves.Read());
+    }
+
+    [Fact]
+    public void ASaveWithNoFloorForTheDepthItIsOnIsRefused()
+    {
+        SaveSystem saves = System;
+        SaveData captured = RunSerialiser.Capture(PlayedRun());
+        saves.Write(captured with { Depth = captured.Depth + 5 });
 
         Assert.Null(saves.Read());
     }
