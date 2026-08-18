@@ -12,6 +12,12 @@ public enum TileKind
     /// where the player arrives.
     /// </summary>
     StairsUp,
+
+    /// <summary>
+    /// A doorway. It can be walked through and it cannot be seen through,
+    /// which makes it the one tile where the two properties disagree.
+    /// </summary>
+    Door,
 }
 
 /// <summary>
@@ -22,7 +28,7 @@ public static class TileRules
 {
     /// <summary>True when an entity can stand on this tile.</summary>
     public static bool IsWalkable(this TileKind kind) =>
-        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp;
+        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp or TileKind.Door;
 
     /// <summary>True when light passes through this tile.</summary>
     public static bool IsTransparent(this TileKind kind) =>
