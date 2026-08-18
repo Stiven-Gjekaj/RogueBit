@@ -10,6 +10,8 @@ public class TileTests
     [InlineData(TileKind.StairsDown, true)]
     [InlineData(TileKind.StairsUp, true)]
     [InlineData(TileKind.Door, true)]
+    [InlineData(TileKind.TrapArmed, true)]
+    [InlineData(TileKind.TrapSprung, true)]
     [InlineData(TileKind.Wall, false)]
     public void SaysWhichTilesCanBeWalkedOn(TileKind kind, bool expected)
         => Assert.Equal(expected, kind.IsWalkable());
@@ -19,6 +21,8 @@ public class TileTests
     [InlineData(TileKind.StairsDown, true)]
     [InlineData(TileKind.StairsUp, true)]
     [InlineData(TileKind.Door, false)]
+    [InlineData(TileKind.TrapArmed, true)]
+    [InlineData(TileKind.TrapSprung, true)]
     [InlineData(TileKind.Wall, false)]
     public void SaysWhichTilesLightPassesThrough(TileKind kind, bool expected)
         => Assert.Equal(expected, kind.IsTransparent());

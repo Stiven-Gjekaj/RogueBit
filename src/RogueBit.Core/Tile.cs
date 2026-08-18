@@ -18,6 +18,15 @@ public enum TileKind
     /// which makes it the one tile where the two properties disagree.
     /// </summary>
     Door,
+
+    /// <summary>
+    /// A trap nobody has stepped on. It is drawn as ordinary ground, because
+    /// a trap you can see is not one.
+    /// </summary>
+    TrapArmed,
+
+    /// <summary>A trap that has gone off. It is drawn, and it is spent.</summary>
+    TrapSprung,
 }
 
 /// <summary>
@@ -28,9 +37,11 @@ public static class TileRules
 {
     /// <summary>True when an entity can stand on this tile.</summary>
     public static bool IsWalkable(this TileKind kind) =>
-        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp or TileKind.Door;
+        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp or TileKind.Door
+            or TileKind.TrapArmed or TileKind.TrapSprung;
 
     /// <summary>True when light passes through this tile.</summary>
     public static bool IsTransparent(this TileKind kind) =>
-        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp;
+        kind is TileKind.Floor or TileKind.StairsDown or TileKind.StairsUp
+            or TileKind.TrapArmed or TileKind.TrapSprung;
 }

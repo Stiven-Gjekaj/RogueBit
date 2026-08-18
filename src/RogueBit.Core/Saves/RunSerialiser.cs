@@ -12,6 +12,8 @@ public static class RunSerialiser
     private const char Down = '>';
     private const char Up = '<';
     private const char Doorway = '+';
+    private const char TrapArmed = '~';
+    private const char TrapSprung = '^';
     private const char Seen = '1';
     private const char Unseen = '0';
 
@@ -109,6 +111,8 @@ public static class RunSerialiser
                     Down => TileKind.StairsDown,
                     Up => TileKind.StairsUp,
                     Doorway => TileKind.Door,
+                    TrapArmed => TileKind.TrapArmed,
+                    TrapSprung => TileKind.TrapSprung,
                     _ => TileKind.Wall,
                 };
 
@@ -201,6 +205,8 @@ public static class RunSerialiser
                     TileKind.StairsDown => Down,
                     TileKind.StairsUp => Up,
                     TileKind.Door => Doorway,
+                    TileKind.TrapArmed => TrapArmed,
+                    TileKind.TrapSprung => TrapSprung,
                     _ => Wall,
                 };
             }
