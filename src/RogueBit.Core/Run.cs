@@ -59,6 +59,12 @@ public sealed class Run
 
     public int Depth { get; private set; }
 
+    /// <summary>
+    /// The deepest floor this run has reached. Turning back does not undo
+    /// having been down there, so this is what the score is paid on.
+    /// </summary>
+    public int DeepestDepth { get; private set; }
+
     /// <summary>How many turns the player has taken in this run.</summary>
     public int Turns { get; private set; }
 
@@ -81,8 +87,14 @@ public sealed class Run
     /// <summary>
     /// The score: coins gathered, a bonus for every floor descended, and a
     /// large one for reaching the bottom and killing what lives there.
+    ///
+    /// The depth bonus is paid on the deepest floor reached rather than the
+    /// floor the player is standing on. Retreating is meant to be a decision
+    /// about surviving, and a score that fell as the player climbed would make
+    /// it a decision about points instead.
     /// </summary>
-    public int Score => Player.Coins + ((Depth - 1) * 10) + (HasWon ? GameRules.VictoryBonus : 0);
+    public int Score =>
+        Player.Coins + ((DeepestDepth - 1) * 10) + (HasWon ? GameRules.VictoryBonus : 0);
 
     public Run(int seed)
     {
@@ -101,6 +113,10 @@ public sealed class Run
         floor = new Floor { Map = map };
         Player = player;
         Depth = depth;
+
+        // A resumed run knows how deep it is. Without a record of how deep it
+        // has been, that is the most that can be said.
+        DeepestDepth = depth;
         Turns = turns;
     }
 
@@ -312,6 +328,7 @@ public sealed class Run
         if (Depth > 0) floors[Depth] = floor;
 
         Depth = depth;
+        DeepestDepth = Math.Max(DeepestDepth, depth);
 
         bool built = floors.TryGetValue(depth, out Floor? kept);
         floor = built ? kept! : BuildFloor(depth);

@@ -140,6 +140,20 @@ public class AscendTests
         Assert.Equal(second, MapBuilder.Render(run.Map));
     }
 
+    [Fact]
+    public void TheScoreDoesNotFallWhenThePlayerTurnsBack()
+    {
+        Run run = new(seed: 3);
+        Descend(run);
+        int deep = run.Score;
+
+        run.Ascend();
+
+        Assert.Equal(1, run.Depth);
+        Assert.Equal(2, run.DeepestDepth);
+        Assert.Equal(deep, run.Score);
+    }
+
     private static void Descend(Run run)
     {
         run.Player.Position = run.Map.StairsDown;
