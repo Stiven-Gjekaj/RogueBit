@@ -4,10 +4,14 @@
     python3 scripts/make_banner.py
 
 The dungeon in the banner is not drawn by hand. assets/banner-frame.json is a
-viewport captured from a game the code actually played: seed 7, turn 151, on
+viewport captured from a game the code actually played: seed 21, turn 233, on
 the first floor. Recapture it with
 
-    dotnet run --project tools/RogueBit.BannerFrame -- --seed 7
+    dotnet run --project tools/RogueBit.BannerFrame -- --search 0 40
+
+which plays every seed in the range and keeps the best frame any of them
+produced. Most seeds give nothing, because the bot dies before the floor is
+worth looking at. A single --seed is quicker and usually worse.
 
 Every colour here is copied from src/RogueBit.Console/Theme.cs, so the banner
 and the running game cannot disagree about what a goblin looks like.
@@ -53,7 +57,7 @@ def version() -> str:
 
 # How many tests the suite holds. Nothing in the repository states this, so it
 # is the one number here that has to be moved by hand.
-TESTS = 328
+TESTS = 389
 
 
 def _trim(state: dict) -> dict:
