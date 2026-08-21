@@ -1,4 +1,5 @@
 using RogueBit.Core;
+using RogueBit.Core.Entities;
 using RogueBit.Core.Items;
 using RogueBit.Core.Map;
 using RogueBit.Core.Saves;
@@ -109,6 +110,40 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Equal(
             original.Monsters.Where(m => m.IsAlive).Select(m => (m.Position, m.Name, m.Health, m.Behaviour)),
             resumed.Monsters.Select(m => (m.Position, m.Name, m.Health, m.Behaviour)));
+    }
+
+    [Fact]
+    public void EveryKindOfMonsterComesBackAsTheKindItWas()
+    {
+        // Floor one is goblins only, so the test above cannot see this. The
+        // behaviour is written out by name and read back the same way, which
+        // is what lets a new kind of monster cost the save format nothing.
+        Run original = DeepRun(to: 6);
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        HashSet<MonsterBehaviour> kinds = [.. original.Monsters.Where(m => m.IsAlive).Select(m => m.Behaviour)];
+
+        Assert.True(kinds.Count > 1, "floor six held one kind of monster, so this proves nothing");
+        Assert.Equal(
+            original.Monsters.Where(m => m.IsAlive).Select(m => (m.Position, m.Name, m.Behaviour)),
+            resumed.Monsters.Select(m => (m.Position, m.Name, m.Behaviour)));
+    }
+
+    [Fact]
+    public void ARousedMonsterComesBackMindingItsOwnBusiness()
+    {
+        // Being roused is not saved, on purpose. A save holds where everything
+        // stands, not what it was thinking, and the floor comes back unlit for
+        // the same reason. Anything still near the player rouses again on its
+        // next turn, so what is lost is one turn of one monster's attention.
+        Run original = PlayedRun();
+        foreach (Monster monster in original.Monsters) monster.IsAlerted = true;
+
+        Run resumed = RunSerialiser.Restore(RunSerialiser.Capture(original));
+
+        Assert.NotEmpty(resumed.Monsters);
+        Assert.All(resumed.Monsters, monster => Assert.False(monster.IsAlerted));
     }
 
     [Fact]
