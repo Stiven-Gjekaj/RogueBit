@@ -399,16 +399,29 @@ public sealed class SaveLoadTests : IDisposable
     {
         SaveSystem saves = System;
 
-        Assert.Equal(0, saves.ReadBestScore());
+        Assert.Equal(0, saves.History.Best());
 
-        Assert.True(saves.RecordScore(40));
-        Assert.Equal(40, saves.ReadBestScore());
+        saves.History.Add(new FinishedRun(1, 40, 3, 100, false));
+        Assert.Equal(40, saves.History.Best());
 
-        Assert.False(saves.RecordScore(25));
-        Assert.Equal(40, saves.ReadBestScore());
+        saves.History.Add(new FinishedRun(2, 25, 2, 90, false));
+        Assert.Equal(40, saves.History.Best());
 
-        Assert.True(saves.RecordScore(90));
-        Assert.Equal(90, saves.ReadBestScore());
+        saves.History.Add(new FinishedRun(3, 90, 5, 400, false));
+        Assert.Equal(90, saves.History.Best());
+    }
+
+    [Fact]
+    public void TheRecordSitsBesideTheSaveAndNotOnTopOfIt()
+    {
+        SaveSystem saves = System;
+
+        saves.Write(RunSerialiser.Capture(PlayedRun()));
+        saves.History.Add(new FinishedRun(1, 40, 3, 100, false));
+
+        Assert.True(File.Exists(saves.SavePath));
+        Assert.True(File.Exists(saves.HistoryPath));
+        Assert.NotEqual(saves.SavePath, saves.HistoryPath);
     }
 
     [Fact]

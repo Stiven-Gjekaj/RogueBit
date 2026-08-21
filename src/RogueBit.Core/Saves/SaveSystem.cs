@@ -28,7 +28,11 @@ public sealed class SaveSystem
 
     public string SavePath => Path.Combine(directory, "run.json");
 
-    public string ScorePath => Path.Combine(directory, "scores.json");
+    /// <summary>Where the record of finished runs lives.</summary>
+    public string HistoryPath => Path.Combine(directory, "runs.json");
+
+    /// <summary>The record of every run finished on this machine.</summary>
+    public RunHistory History => new(HistoryPath);
 
     public bool SaveExists => File.Exists(SavePath);
 
@@ -94,38 +98,6 @@ public sealed class SaveSystem
         }
     }
 
-    /// <summary>The best score recorded on this machine, or zero when there is none.</summary>
-    public int ReadBestScore()
-    {
-        try
-        {
-            if (!File.Exists(ScorePath)) return 0;
-
-            return JsonSerializer.Deserialize<ScoreBoard>(File.ReadAllText(ScorePath, Encoding.UTF8))?.Best ?? 0;
-        }
-        catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
-        {
-            return 0;
-        }
-    }
-
-    /// <summary>Records a score, and reports whether it beat what was there.</summary>
-    public bool RecordScore(int score)
-    {
-        if (score <= ReadBestScore()) return false;
-
-        try
-        {
-            Directory.CreateDirectory(directory);
-            File.WriteAllText(ScorePath, JsonSerializer.Serialize(new ScoreBoard(score), Format), Encoding.UTF8);
-            return true;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-    }
-
     /// <summary>Where saves belong on this machine.</summary>
     public static string DefaultDirectory()
     {
@@ -144,6 +116,4 @@ public sealed class SaveSystem
 
         return Path.Combine(root, "RogueBit");
     }
-
-    private sealed record ScoreBoard(int Best);
 }

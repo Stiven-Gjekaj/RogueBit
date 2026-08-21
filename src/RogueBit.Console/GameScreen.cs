@@ -150,15 +150,17 @@ public sealed class GameScreen : SadConsole.Console
     }
 
     /// <summary>
-    /// Records the score once and removes the save. A dead run must not be
-    /// resumable, or the save becomes a way to undo dying.
+    /// Writes the run into the record once and removes the save. A dead run
+    /// must not be resumable, or the save becomes a way to undo dying.
     /// </summary>
     private void RecordTheEndOfTheRun()
     {
         if (scoreRecorded) return;
 
         scoreRecorded = true;
-        saves.RecordScore(run.Score);
+
+        saves.History.Add(new FinishedRun(run.Seed, run.Score, run.DeepestDepth, run.Turns, run.HasWon));
+
         saves.Delete();
     }
 
@@ -485,7 +487,7 @@ public sealed class GameScreen : SadConsole.Console
 
     private void DrawGameOver()
     {
-        string[] lines = EndOfRun.Lines(run, saves.ReadBestScore());
+        string[] lines = EndOfRun.Lines(run, saves.History.Best());
 
         // Green for a win, red for a death, so the ending reads before the words do.
         Color panel = run.HasWon ? new Color(14, 44, 26) : new Color(48, 16, 16);
