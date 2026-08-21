@@ -75,6 +75,19 @@ public static class SpawnTable
             CoinReward = 3,
         };
 
+    public static Monster Scavenger(Position position, int depth) =>
+        new(position, maxHealth: 4 + depth, power: 2 + (depth / 2), defence: 0)
+        {
+            Glyph = 's',
+            Name = "a scavenger",
+            Behaviour = MonsterBehaviour.Scavenger,
+            AggroRadius = 9,
+
+            // Worth more than a goblin. It comes at you while it is whole and
+            // runs the moment it is not, so finishing one is work.
+            CoinReward = 4,
+        };
+
     public static Monster Archer(Position position, int depth) =>
         new(position, maxHealth: 4 + depth, power: 3 + (depth / 3), defence: 0)
         {

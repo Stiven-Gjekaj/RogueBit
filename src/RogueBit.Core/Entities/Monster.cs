@@ -12,6 +12,9 @@ public enum MonsterBehaviour
     /// <summary>Keeps its distance and shoots along a clear line.</summary>
     Archer,
 
+    /// <summary>Chases while it is whole, and runs once it is hurt.</summary>
+    Scavenger,
+
     /// <summary>Chases, hits hard, and hits harder once it is hurt.</summary>
     Boss,
 }
@@ -53,6 +56,13 @@ public sealed class Monster : Actor
     /// that point on, which is the whole of its second phase.
     /// </summary>
     public bool IsEnraged => Behaviour == MonsterBehaviour.Boss && Health * 2 <= MaxHealth;
+
+    /// <summary>
+    /// True when a scavenger has taken enough to break and run. It is the
+    /// mirror of a boss going into its second phase: the same half of the same
+    /// health bar, read the opposite way.
+    /// </summary>
+    public bool IsFleeing => Behaviour == MonsterBehaviour.Scavenger && Health * 2 < MaxHealth;
 
     /// <summary>How many steps this monster takes for each player turn.</summary>
     public int Speed => Behaviour == MonsterBehaviour.Swift ? 2 : 1;

@@ -594,6 +594,17 @@ public sealed class Run
 
         if (monster.Behaviour == MonsterBehaviour.Archer && TryShoot(monster, distance)) return;
 
+        if (monster.IsFleeing)
+        {
+            if (Flee(monster)) return;
+
+            // Cornered. It fights if the player is within reach, and otherwise
+            // stands where it is. It does not walk towards the player: a
+            // coward with nowhere to go is still a coward.
+            if (distance == 1) AttackPlayer(monster);
+            return;
+        }
+
         if (distance == 1)
         {
             AttackPlayer(monster);
@@ -671,6 +682,45 @@ public sealed class Run
             AgainstPlayer: true));
 
         if (!Player.IsAlive) turnEvents.Add(new TurnEvent(TurnEventKind.Death, Player.Position, AgainstPlayer: true));
+    }
+
+    /// <summary>
+    /// Takes the step that puts the most ground between a monster and the
+    /// player, and reports whether there was one to take.
+    ///
+    /// There is no pathfinding here on purpose. The pathfinder walks towards
+    /// something, and running away has no destination, so a monster that used
+    /// it would need a target picked for it and would then walk into whatever
+    /// was behind. One step is enough: a scavenger backing out of a room is
+    /// making the same decision every turn, and it can be cut off by walking
+    /// round it, which is the interesting part.
+    ///
+    /// Nothing here draws from the run's chance. Ties go to whichever step
+    /// comes first in <see cref="Directions.All"/>. A monster that rolled for
+    /// its escape would shift the seeded stream, and two runs on one seed
+    /// would stop matching the moment one of them hurt a scavenger.
+    /// </summary>
+    private bool Flee(Monster monster)
+    {
+        int furthest = monster.Position.ChebyshevDistanceTo(Player.Position);
+        Position? escape = null;
+
+        foreach (Position step in Directions.All)
+        {
+            Position target = monster.Position + step;
+
+            if (!Map.CanStep(monster.Position, target)) continue;
+            if (IsOccupied(target)) continue;
+            if (target.ChebyshevDistanceTo(Player.Position) <= furthest) continue;
+
+            furthest = target.ChebyshevDistanceTo(Player.Position);
+            escape = target;
+        }
+
+        if (escape is not { } cell) return false;
+
+        monster.Position = cell;
+        return true;
     }
 
     private void Wander(Monster monster)
