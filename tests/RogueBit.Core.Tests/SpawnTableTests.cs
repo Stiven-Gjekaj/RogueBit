@@ -52,6 +52,64 @@ public class SpawnTableTests
         }
     }
 
+    /// <summary>What a floor of monsters actually turns out to be, by kind.</summary>
+    private static Dictionary<MonsterBehaviour, int> Tally(int depth, int seeds = 400)
+    {
+        Dictionary<MonsterBehaviour, int> counted = [];
+
+        for (int seed = 0; seed < seeds; seed++)
+        {
+            SeededRandom random = new(seed);
+
+            for (int i = 0; i < SpawnTable.MonsterCount(depth); i++)
+            {
+                MonsterBehaviour kind = SpawnTable.CreateMonster(Origin, depth, random).Behaviour;
+                counted[kind] = counted.GetValueOrDefault(kind) + 1;
+            }
+        }
+
+        return counted;
+    }
+
+    [Fact]
+    public void ScavengersStartOnTheSecondFloor()
+    {
+        Assert.False(Tally(1).ContainsKey(MonsterBehaviour.Scavenger));
+        Assert.True(Tally(2).ContainsKey(MonsterBehaviour.Scavenger));
+    }
+
+    [Fact]
+    public void AboutOneMonsterInFiveIsAScavengerOnceTheyAppear()
+    {
+        // Counted rather than reasoned about. The bands in CreateMonster
+        // overlap, so what a threshold is worth depends on the lines above it
+        // and cannot be read off the number itself.
+        foreach (int depth in (int[])[2, 3, 5, 10])
+        {
+            Dictionary<MonsterBehaviour, int> tally = Tally(depth);
+            int total = tally.Values.Sum();
+
+            Assert.InRange(tally[MonsterBehaviour.Scavenger] * 100 / total, 15, 25);
+        }
+    }
+
+    [Fact]
+    public void GoblinsStayTheCommonestThingOnEveryFloor()
+    {
+        // Whatever else arrives, the kind the player learned first has to stay
+        // the one they meet most, or the floor stops reading as this dungeon.
+        foreach (int depth in (int[])[1, 2, 4, 7, 10])
+        {
+            Dictionary<MonsterBehaviour, int> tally = Tally(depth);
+
+            Assert.All(
+                tally.Where(pair => pair.Key != MonsterBehaviour.Chaser),
+                pair => Assert.True(
+                    pair.Value < tally[MonsterBehaviour.Chaser],
+                    $"floor {depth} had more of {pair.Key} than goblins"));
+        }
+    }
+
     [Fact]
     public void DeeperFloorsEventuallyProduceEveryKind()
     {
@@ -65,6 +123,7 @@ public class SpawnTableTests
         Assert.Contains(MonsterBehaviour.Chaser, seen);
         Assert.Contains(MonsterBehaviour.Swift, seen);
         Assert.Contains(MonsterBehaviour.Archer, seen);
+        Assert.Contains(MonsterBehaviour.Scavenger, seen);
     }
 
     [Fact]
