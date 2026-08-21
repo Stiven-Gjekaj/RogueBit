@@ -103,6 +103,34 @@ save that cannot be trusted should not be played.
 
 A run that ends deletes its save. Otherwise loading is a way to undo dying.
 
+## The record of finished runs
+
+`runs.json` sits beside the save and holds every run this machine has finished:
+the seed, the score, the deepest floor, the turns, and whether it was won. It
+replaces a file that held one integer, the best score across every seed ever
+played, which could print one number and answer no other question.
+
+Only a **finished** run is written. Leaving with Escape saves and the run
+carries on later, so it has not finished.
+
+There is **no clock in it**. Entries are in the order they were added, which is
+all that last time needs, and a timestamp would put the wall clock into every
+test that reads one back.
+
+It is written beside the target and moved over it, and it carries a version it
+refuses to read past, both for the same reasons the save does. The file it
+replaces had neither, which is the whole argument for not simply widening that
+one.
+
+Nothing migrates the old file. It holds one number with no seed attached, and
+carrying it across would mean inventing a run that was never played.
+
+The record faces the player twice. A seed played before opens with the floor it
+reached and what it scored, so the run has something to be measured against
+from the first turn. The panel at the end says whether this run is the best on
+this seed and what there is left to beat, which is the number worth putting
+beside an offer to play the same seed again.
+
 ## Effects
 
 The core reports `TurnEvent` values: what happened, on which cell, how big it
@@ -223,6 +251,72 @@ One player action advances the whole world:
 
 A move into a wall is refused and **costs no turn**. A misread key should not
 kill anybody.
+
+## What a monster does on its turn
+
+`Run.TakeMonsterTurn` is the one place any of this is decided, and it reads in
+this order:
+
+1. Too far away and not roused: wander one random step.
+2. A howler that has not called yet: call.
+3. An archer with a clear line: shoot.
+4. Below half health and a scavenger: run.
+5. Beside the player: hit it.
+6. Otherwise: one step of the shortest walk towards the player.
+
+**Being roused is asked about beside the distance, not folded into it.** A
+radius that grew would also change how far an archer shoots and how far a
+monster can be led away, and hearing a noise should do neither.
+
+**A howler calls once.** Calling is what its turn is spent on, so for that turn
+it is doing nothing to the player, which is what makes killing one first the
+right answer rather than merely an obvious one. A howler roused by another
+howler does not call, which stops one sighting travelling the length of a floor
+by relay. The call goes into the log whether or not the player can see the
+howler, because a call is a sound and hearing one from a corridor you have not
+walked down is the warning.
+
+**Running takes the step that puts the most ground between the monster and the
+player.** No pathfinding: the pathfinder walks towards something, and running
+away has no destination. Ties go to whichever direction comes first in
+`Directions.All`, and nothing about it draws from the run's chance, or two runs
+of one seed would stop matching the moment one of them hurt a scavenger.
+Wandering does draw, which is the reason it is the only thing here that does.
+
+**Running springs traps and wandering does not.** Fleeing is real movement and
+pays for the ground it crosses, so driving a scavenger back over a trap is a
+way to finish one that will not stand and be hit. A monster that has not
+noticed the player would otherwise clear the floor of traps by itself.
+
+Being roused is **not saved**. A save holds where everything stands, not what it
+was thinking, and a floor comes back unlit for the same reason. Anything still
+near the player rouses again on its next turn, so what is lost is one turn of
+one monster's attention, and the save format costs nothing.
+
+## What lives on a floor
+
+`SpawnTable.CreateMonster` takes one roll from 0 to 99 and reads it against
+bands that **do not overlap**. A band whose depth has not come round yet falls
+through to a goblin, so goblins are what fills whatever the other kinds have
+not taken.
+
+| Roll | Kind | From floor |
+| --- | --- | --- |
+| 0 to 9 | howler | 3 |
+| 10 to 25 | archer | 4 |
+| 26 to 51 | jackal | 2 |
+| 52 to 69 | scavenger | 2 |
+| anything left | goblin | 1 |
+
+These were thresholds that ran from zero and swallowed each other. What a line
+was worth then depended on every line above it, so adding the howler at the top
+quietly took floor two from goblins 46 and jackals 36 to jackals 48 and goblins
+34. Nothing in the source said that would happen, and
+`SpawnTableTests.AKindKeepsItsShareOnceItHasAppeared` is there so nothing can
+do it again.
+
+The numbers are counted rather than reasoned about, over four hundred seeds a
+floor, and the counts are the tests.
 
 ## Combat
 
