@@ -32,12 +32,14 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 ## The game running
 
 <div align="center">
-  <img src="assets/gameplay.gif" alt="The RogueBit window: a dungeon floor of rooms and corridors, the player moving through lit ground with remembered ground dimmed behind, a status line showing health, score, floor, turn and seed, and a message log recording each blow." width="623">
+  <img src="assets/gameplay.gif" alt="The RogueBit window: a dungeon floor of rooms and corridors joined by doorways, the player walking a corner at a time through lit ground with remembered ground dimmed behind it, a sprung trap left on the ground it crossed, a status line showing health, score, floor, turn, seed and the health of the goblin it has ended up beside, and a message log recording each blow." width="589">
 </div>
 
-Captured from the real window, on seed 31337. The route was worked out by
-playing the same seed headlessly first, because the game is deterministic and
-the keys replay the same run.
+Captured from the real window, on seed 2. The walk comes from
+`tools/RogueBit.Route`, which plays the seed headlessly until the floor is
+worth looking at, writes that run, and prints the twenty two keys that finish
+it. The window picks the run up and the keys are replayed into it. Nothing
+here is drawn by hand, so it shows the game as it stands and not as it was.
 
 ---
 
