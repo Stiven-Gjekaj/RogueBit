@@ -30,6 +30,19 @@ public sealed class Monster : Actor
     /// <summary>What killing this monster is worth.</summary>
     public required int CoinReward { get; init; }
 
+    /// <summary>
+    /// True when something has roused this monster, so it hunts the player
+    /// whatever the distance between them.
+    ///
+    /// It is deliberately not saved. A save holds where everything stands, not
+    /// what it was thinking, and a resumed floor comes back unlit for the same
+    /// reason. A monster that was chasing you across a room forgets once, and
+    /// takes it up again on the next turn if you are still anywhere near.
+    ///
+    /// Nothing clears it. A monster that has heard you does not unhear you.
+    /// </summary>
+    public bool IsAlerted { get; set; }
+
     public Monster(Position position, int maxHealth, int power, int defence)
         : base(position, maxHealth, power, defence)
     {

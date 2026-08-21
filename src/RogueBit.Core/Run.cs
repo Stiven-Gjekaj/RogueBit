@@ -582,7 +582,11 @@ public sealed class Run
         // never swing and would spend its turn trying to walk onto the player.
         int distance = monster.Position.ChebyshevDistanceTo(Player.Position);
 
-        if (distance > monster.AggroRadius)
+        // Being roused is asked about beside the distance rather than folded
+        // into the radius. A radius that changed would also change how far a
+        // monster shoots and how far it can be led away, and none of that is
+        // what hearing a noise should do.
+        if (distance > monster.AggroRadius && !monster.IsAlerted)
         {
             Wander(monster);
             return;
