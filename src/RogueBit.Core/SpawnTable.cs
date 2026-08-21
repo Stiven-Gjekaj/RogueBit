@@ -55,16 +55,21 @@ public static class SpawnTable
 
         // Tougher kinds unlock with depth, so floor one is only ever goblins.
         //
-        // One roll, read against thresholds that overlap. The order of these
-        // lines is therefore part of the numbers: a band only gets what the
-        // lines above it did not take, and moving one changes every kind below
-        // it. What each is worth was counted rather than worked out, and the
-        // counts are in the tests.
+        // One roll, read against bands that do not overlap. Each band is worth
+        // exactly what it looks worth, and a band whose depth has not come
+        // round yet falls through to a goblin, so goblins are what fills
+        // whatever the rest have not taken.
+        //
+        // These used to be thresholds that ran from zero and swallowed each
+        // other, and what a line was worth then depended on every line above
+        // it. Adding a kind at the top quietly halved a kind at the bottom,
+        // which is what happened to the jackals when the howler arrived.
         int roll = random.Next(100);
 
-        if (depth >= 4 && roll < 18) return Archer(position, depth);
-        if (depth >= 2 && roll < 36) return Jackal(position, depth);
-        if (depth >= 2 && roll < 54) return Scavenger(position, depth);
+        if (depth >= 3 && roll < 10) return Howler(position, depth);
+        if (depth >= 4 && roll is >= 10 and < 26) return Archer(position, depth);
+        if (depth >= 2 && roll is >= 26 and < 52) return Jackal(position, depth);
+        if (depth >= 2 && roll is >= 52 and < 70) return Scavenger(position, depth);
 
         return Goblin(position, depth);
     }

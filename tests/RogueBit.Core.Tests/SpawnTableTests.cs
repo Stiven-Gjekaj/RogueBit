@@ -94,6 +94,54 @@ public class SpawnTableTests
     }
 
     [Fact]
+    public void HowlersStartOnTheThirdFloor()
+    {
+        Assert.False(Tally(2).ContainsKey(MonsterBehaviour.Howler));
+        Assert.True(Tally(3).ContainsKey(MonsterBehaviour.Howler));
+    }
+
+    [Fact]
+    public void AHowlerIsTheRarestThingOnAnyFloorItIsOn()
+    {
+        // One that wakes a room is worth meeting one at a time.
+        foreach (int depth in (int[])[3, 6, 10])
+        {
+            Dictionary<MonsterBehaviour, int> tally = Tally(depth);
+
+            Assert.All(
+                tally.Where(pair => pair.Key != MonsterBehaviour.Howler),
+                pair => Assert.True(
+                    pair.Value > tally[MonsterBehaviour.Howler],
+                    $"floor {depth} had fewer of {pair.Key} than howlers"));
+        }
+    }
+
+    [Fact]
+    public void AKindKeepsItsShareOnceItHasAppeared()
+    {
+        // The bands do not overlap, so what a kind is worth does not depend on
+        // which other kinds have unlocked above it. Jackals were half as
+        // common on floor four as on floor two while they did, and nothing
+        // said so.
+        foreach ((MonsterBehaviour kind, int from) in
+            ((MonsterBehaviour, int)[])[(MonsterBehaviour.Swift, 2), (MonsterBehaviour.Scavenger, 2), (MonsterBehaviour.Howler, 3)])
+        {
+            int shallow = Share(kind, from);
+
+            foreach (int depth in (int[])[from + 1, 6, 10])
+            {
+                Assert.InRange(Share(kind, depth), shallow - 3, shallow + 3);
+            }
+        }
+    }
+
+    private static int Share(MonsterBehaviour kind, int depth)
+    {
+        Dictionary<MonsterBehaviour, int> tally = Tally(depth);
+        return tally.GetValueOrDefault(kind) * 100 / tally.Values.Sum();
+    }
+
+    [Fact]
     public void GoblinsStayTheCommonestThingOnEveryFloor()
     {
         // Whatever else arrives, the kind the player learned first has to stay
@@ -124,6 +172,7 @@ public class SpawnTableTests
         Assert.Contains(MonsterBehaviour.Swift, seen);
         Assert.Contains(MonsterBehaviour.Archer, seen);
         Assert.Contains(MonsterBehaviour.Scavenger, seen);
+        Assert.Contains(MonsterBehaviour.Howler, seen);
     }
 
     [Fact]
