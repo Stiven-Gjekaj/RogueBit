@@ -27,7 +27,7 @@ public sealed record Options(
           --no-effects      Turn off the particles and the screen shake.
           --help            Show this text.
 
-        The run is saved when you press S, and when you leave with Escape.
+        The run is saved when you press F5, and when you leave with Escape.
         A run that ends is removed, so dying cannot be undone by loading.
 
         Printing a floor is deterministic: the same seed and the same depth

@@ -173,23 +173,51 @@ public sealed class GameScreen : SadConsole.Console
             }
         }
 
-        if (keyboard.IsKeyPressed(Keys.M))
+        foreach ((Keys key, PlayAction action) in Keybindings.Actions)
         {
-            showingLog = true;
-            logScroll.ToTheNewest();
-            Draw();
+            if (!keyboard.IsKeyPressed(key)) continue;
+
+            Do(action);
             return;
         }
+    }
 
-        if (keyboard.IsKeyPressed(Keys.OemPeriod) || keyboard.IsKeyPressed(Keys.NumPad5)) run.Wait();
-        else if (keyboard.IsKeyPressed(Keys.G)) run.PickUp();
-        else if (keyboard.IsKeyPressed(Keys.OemComma)) run.TakeStairs();
-        else if (keyboard.IsKeyPressed(Keys.I)) showingInventory = true;
-        else if (keyboard.IsKeyPressed(Keys.S)) SaveNow();
-        else if (keyboard.IsKeyPressed(Keys.R))
+    private void Do(PlayAction action)
+    {
+        switch (action)
         {
-            run = run.Restart();
-            effects.Clear();
+            case PlayAction.Wait:
+                run.Wait();
+                break;
+
+            case PlayAction.PickUp:
+                run.PickUp();
+                break;
+
+            case PlayAction.TakeStairs:
+                run.TakeStairs();
+                break;
+
+            case PlayAction.OpenPack:
+                showingInventory = true;
+                break;
+
+            case PlayAction.OpenLog:
+                showingLog = true;
+                logScroll.ToTheNewest();
+                break;
+
+            case PlayAction.Save:
+                SaveNow();
+                break;
+
+            case PlayAction.Restart:
+                run = run.Restart();
+                effects.Clear();
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(action), action, "That is not an action.");
         }
     }
 
