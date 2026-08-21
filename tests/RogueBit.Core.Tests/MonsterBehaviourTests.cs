@@ -426,4 +426,35 @@ public class MonsterBehaviourTests
             run.Log.Messages,
             message => message.Text == "A howler calls out. One more comes for you.");
     }
+
+    [Fact]
+    public void ACallIsReportedToWhoeverIsDrawing()
+    {
+        Monster howler = Howler(new Position(5, 1));
+        Monster first = Goblin(new Position(8, 3), aggroRadius: 1);
+        Monster second = Goblin(new Position(9, 3), aggroRadius: 1);
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler, first, second);
+
+        run.Wait();
+
+        TurnEvent call = Assert.Single(run.LastTurnEvents, turn => turn.Kind == TurnEventKind.Call);
+
+        Assert.Equal(howler.Position, call.Where);
+        Assert.Equal(2, call.Magnitude);
+        Assert.False(call.AgainstPlayer);
+    }
+
+    [Fact]
+    public void ACallThatNothingAnsweredIsStillReported()
+    {
+        Monster howler = Howler(new Position(5, 1));
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler);
+
+        run.Wait();
+
+        TurnEvent call = Assert.Single(run.LastTurnEvents, turn => turn.Kind == TurnEventKind.Call);
+
+        Assert.Equal(0, call.Magnitude);
+    }
 }

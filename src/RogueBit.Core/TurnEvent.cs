@@ -29,6 +29,12 @@ public enum TurnEventKind
 
     /// <summary>A hidden trap went off.</summary>
     Trap,
+
+    /// <summary>
+    /// A howler called, and its magnitude is how many answered. A frontend
+    /// that wants to show a bigger noise for a bigger answer has the number.
+    /// </summary>
+    Call,
 }
 
 /// <summary>

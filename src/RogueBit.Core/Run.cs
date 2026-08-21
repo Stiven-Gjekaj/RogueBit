@@ -739,6 +739,8 @@ public sealed class Run
                 _ => $"{Capitalise(howler.Name)} calls out. {answered} more come for you.",
             },
             MessageKind.Warning);
+
+        turnEvents.Add(new TurnEvent(TurnEventKind.Call, howler.Position, answered));
     }
 
     /// <summary>
