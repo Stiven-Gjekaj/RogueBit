@@ -7,7 +7,7 @@ _Shadowcasting, A\* pursuit and multi-floor dungeons, written from scratch on .N
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10"/>
   <img src="https://img.shields.io/badge/SadConsole-10.10-2C7D8C?style=for-the-badge" alt="SadConsole 10.10"/>
-  <img src="https://img.shields.io/badge/tests-328_passing-427819?style=for-the-badge" alt="328 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-389_passing-427819?style=for-the-badge" alt="389 tests passing"/>
 </p>
 
 <p align="center">
@@ -209,12 +209,16 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
   those two disagree. A corridor no longer shows you what is waiting at the far
   end of it.
 - **Hidden traps.** Drawn as ordinary ground until something stands on one, and
-  they do not care who that was, so leading a jackal across one is a real move.
-  More of them, hitting harder, the deeper you go.
-- **Four kinds of monster.** Goblins chase. Jackals take two steps for each of
-  yours. Archers keep their distance and shoot along a clear line. A warden
-  stands on every fifth floor and hits twice as hard once it is below half
-  health.
+  they do not care who that was, so leading a jackal across one is a real move
+  and driving a fleeing scavenger back over one is how you finish it. More of
+  them, hitting harder, the deeper you go.
+- **Six kinds of monster.** Goblins chase. Jackals take two steps for each of
+  yours. Archers keep their distance and shoot along a clear line. Scavengers
+  come at you while they are whole and run once they are hurt, so a trap behind
+  one is worth having. Howlers notice you from further off than anything else
+  and spend that turn calling, and everything within twelve cells comes for you
+  whatever it can see from where it stands. A warden stands on every fifth floor
+  and hits twice as hard once it is below half health.
 - **Depth that costs something.** Monsters grow in number and strength as you
   descend while potions grow scarcer, and the harder kinds only unlock deeper
   down, so the first floor is always goblins.
@@ -237,6 +241,10 @@ stopped. A run that ends is removed, so dying cannot be undone by loading.
 - **Saving and resuming.** The floor, the pack, what you have explored and the
   exact state of the dice all come back, so a resumed run plays on rather than
   replaying the seed.
+- **A record of every run you finish**, kept by seed. Start a seed you have
+  played and the log opens with the floor it reached and what it scored, and
+  the panel at the end says whether this run beat it. `r` plays the same seed
+  again, which is the whole point of a game where a seed replays the same run.
 - **Hit flashes, sparks and screen shake**, which the core knows nothing about
   and `--no-effects` switches off entirely.
 
@@ -273,9 +281,10 @@ scripts/                Builds assets/banner.svg from that capture
 ## Status
 
 Alpha. The game is playable from the first floor to the warden at the bottom.
-328 tests cover it: 284 against the rules and 44 against the frontend, which
-covers the effects, the scrolling of the log and the command line. The window itself is compiled on three platforms but never run
-by continuous integration, because it needs a display.
+389 tests cover it: 325 against the rules and 64 against the frontend, which
+covers the effects, the scrolling of the log, the keyboard, the panels and the
+command line. The window itself is compiled on three platforms but never run by
+continuous integration, because it needs a display.
 
 ## Licence
 
