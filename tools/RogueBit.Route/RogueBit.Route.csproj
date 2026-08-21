@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Works out the walk that assets/gameplay.gif records. This is a developer
+       tool and is not part of the game, so it ships with nothing. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RogueBit.Route</RootNamespace>
+    <AssemblyName>RogueBit.Route</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/RogueBit.Core/RogueBit.Core.csproj" />
+  </ItemGroup>
+
+</Project>
