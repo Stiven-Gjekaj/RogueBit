@@ -184,7 +184,7 @@ Run the tests with `dotnet test`.
 | `,` | Take the stairs you are standing on, up or down |
 | `i` | Open the pack, then a letter to use an item |
 | `m` | Read back through the whole log |
-| `s` | Save the run |
+| `F5` | Save the run without leaving it |
 | `r` | Start the same seed again |
 | `Escape` | Close what is open, or save and leave |
 
