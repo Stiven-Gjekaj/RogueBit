@@ -52,7 +52,16 @@ public static class Program
             }
         }
 
-        run ??= new Run(options.Seed ?? Environment.TickCount);
+        if (run is null)
+        {
+            run = new Run(options.Seed ?? Environment.TickCount);
+
+            // Only for a run that is starting. A resumed run is the same run
+            // carrying on, and what happened on some earlier one is not what
+            // the player opened the game to read.
+            StartOfRun.Announce(run, saves.History);
+        }
+
         Theme theme = Theme.For(options.ColourBlind);
 
         SadConsole.Settings.WindowTitle = $"RogueBit, seed {run.Seed}";

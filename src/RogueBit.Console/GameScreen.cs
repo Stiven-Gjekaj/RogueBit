@@ -118,6 +118,7 @@ public sealed class GameScreen : SadConsole.Console
             if (keyboard.IsKeyPressed(Keys.R))
             {
                 run = run.Restart();
+                StartOfRun.Announce(run, saves.History);
                 showingInventory = false;
                 scoreRecorded = false;
                 bestOnThisSeed = 0;
