@@ -20,6 +20,9 @@ public class EffectsTests
     private static TurnEvent Trap(bool onPlayer, int damage = 4) =>
         new(TurnEventKind.Trap, new Position(5, 5), damage, onPlayer);
 
+    private static TurnEvent Call(int answered) =>
+        new(TurnEventKind.Call, new Position(5, 5), answered);
+
     /// <summary>Runs the clock until nothing is left, or gives up.</summary>
     private static double Settle(Effects effects, double limit = 10.0)
     {
@@ -272,4 +275,45 @@ public class EffectsTests
     [Fact]
     public void RefusesATurnThatIsNotThere()
         => Assert.Throws<ArgumentNullException>(() => New().Play(null!));
+
+    [Fact]
+    public void ACallThrowsARing()
+    {
+        Effects effects = New();
+
+        effects.Play([Call(answered: 0)]);
+
+        Assert.NotEmpty(effects.Particles);
+
+        // Every particle of a ring leaves at the same speed, which is what
+        // holds its shape. A spray does not.
+        double[] speeds =
+        [
+            .. effects.Particles.Select(p => Math.Sqrt((p.VelocityX * p.VelocityX) + (p.VelocityY * p.VelocityY))),
+        ];
+
+        Assert.All(speeds, speed => Assert.Equal(speeds[0], speed, 6));
+    }
+
+    [Fact]
+    public void ACallManyAnsweredIsWiderThanOneNobodyDid()
+    {
+        Effects quiet = New();
+        Effects loud = New();
+
+        quiet.Play([Call(answered: 0)]);
+        loud.Play([Call(answered: 4)]);
+
+        Assert.True(loud.Particles.Count > quiet.Particles.Count);
+    }
+
+    [Fact]
+    public void ACallDoesNotShakeTheScreen()
+    {
+        Effects effects = New();
+
+        effects.Play([Call(answered: 8)]);
+
+        Assert.Equal((0, 0), effects.ShakeOffset);
+    }
 }

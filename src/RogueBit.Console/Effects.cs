@@ -124,6 +124,14 @@ public sealed class Effects
                     if (turn.AgainstPlayer) shake = Math.Max(shake, 0.6 + (turn.Magnitude * 0.22));
                     break;
 
+                case TurnEventKind.Call:
+                    // A ring rather than a spray. A call is a sound leaving a
+                    // cell in every direction, not something being struck, and
+                    // it has to read differently from a blow at a glance. It
+                    // goes wider when more answered it.
+                    Ring(turn.Where, ')', theme.Warning, 8 + Math.Min(8, turn.Magnitude * 2));
+                    break;
+
                 default:
                     break;
             }
@@ -164,6 +172,21 @@ public sealed class Effects
             double speed = 2.0 + (random.NextDouble() * 5.0);
 
             Add(where, glyph, colour, Math.Cos(angle) * speed, Math.Sin(angle) * speed);
+        }
+    }
+
+    /// <summary>
+    /// Throws particles out at even angles and one speed, so they hold their
+    /// shape as they spread. This is what makes it look like a ring rather
+    /// than a spray, and it is the only effect here that is not random.
+    /// </summary>
+    private void Ring(Position where, char glyph, Color colour, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double angle = Math.Tau * i / count;
+
+            Add(where, glyph, colour, Math.Cos(angle) * 6.0, Math.Sin(angle) * 6.0);
         }
     }
 
