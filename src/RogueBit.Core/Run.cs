@@ -592,6 +592,15 @@ public sealed class Run
             return;
         }
 
+        // A howler spends the turn it notices the player on calling, and only
+        // afterwards behaves like anything else. That is what the ability
+        // costs: for one turn it is doing nothing to the player at all.
+        if (monster.Behaviour == MonsterBehaviour.Howler && !monster.IsAlerted)
+        {
+            Call(monster);
+            return;
+        }
+
         if (monster.Behaviour == MonsterBehaviour.Archer && TryShoot(monster, distance)) return;
 
         if (monster.IsFleeing)
@@ -692,6 +701,44 @@ public sealed class Run
             AgainstPlayer: true));
 
         if (!Player.IsAlive) turnEvents.Add(new TurnEvent(TurnEventKind.Death, Player.Position, AgainstPlayer: true));
+    }
+
+    /// <summary>
+    /// Rouses everything within earshot, and rouses the howler itself so it
+    /// never calls twice.
+    ///
+    /// A howler roused by another howler will not call at all. That stops one
+    /// sighting travelling the length of a floor by relay, and it reads
+    /// correctly: something already coming for you has nothing left to shout
+    /// about.
+    ///
+    /// The call is written to the log whether or not the player can see the
+    /// howler. A call is a sound. Hearing one from a corridor you have not
+    /// walked down yet is the warning, and hiding it until the howler is in
+    /// sight would throw the warning away.
+    /// </summary>
+    private void Call(Monster howler)
+    {
+        howler.IsAlerted = true;
+        int answered = 0;
+
+        foreach (Monster other in floor.Monsters)
+        {
+            if (!other.IsAlive || ReferenceEquals(other, howler) || other.IsAlerted) continue;
+            if (other.Position.ChebyshevDistanceTo(howler.Position) > SpawnTable.CallRadius) continue;
+
+            other.IsAlerted = true;
+            answered++;
+        }
+
+        Log.Add(
+            answered switch
+            {
+                0 => $"{Capitalise(howler.Name)} calls out, and nothing answers.",
+                1 => $"{Capitalise(howler.Name)} calls out. One more comes for you.",
+                _ => $"{Capitalise(howler.Name)} calls out. {answered} more come for you.",
+            },
+            MessageKind.Warning);
     }
 
     /// <summary>

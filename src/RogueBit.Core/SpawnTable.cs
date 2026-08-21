@@ -38,6 +38,13 @@ public static class SpawnTable
     /// </summary>
     public static int TrapDamage(int depth) => 2 + (depth / 2);
 
+    /// <summary>
+    /// How far a howler's call carries. It is wider than any monster notices
+    /// the player by itself, which is the whole point: a howler turns one
+    /// sighting into a room's worth of them.
+    /// </summary>
+    public const int CallRadius = 12;
+
     /// <summary>True when this floor holds a boss.</summary>
     public static bool HasBoss(int depth) => depth % 5 == 0 || GameRules.IsFinalDepth(depth);
 
@@ -93,6 +100,22 @@ public static class SpawnTable
             // Worth more than a goblin. It comes at you while it is whole and
             // runs the moment it is not, so finishing one is work.
             CoinReward = 4,
+        };
+
+    public static Monster Howler(Position position, int depth) =>
+        new(position, maxHealth: 6 + depth, power: 2 + (depth / 3), defence: 0)
+        {
+            Glyph = 'h',
+            Name = "a howler",
+            Behaviour = MonsterBehaviour.Howler,
+
+            // It notices further than anything else, because a lookout that
+            // sees no further than the things it is calling is no lookout.
+            AggroRadius = 12,
+
+            // Worth the most of the four. What it costs the player is not the
+            // blow it lands, and killing one first is the right answer.
+            CoinReward = 5,
         };
 
     public static Monster Archer(Position position, int depth) =>

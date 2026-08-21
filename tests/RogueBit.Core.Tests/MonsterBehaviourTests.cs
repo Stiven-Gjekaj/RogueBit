@@ -66,6 +66,16 @@ public class MonsterBehaviourTests
         return monster;
     }
 
+    private static Monster Howler(Position at) =>
+        new(at, maxHealth: 10, power: 0, defence: 0)
+        {
+            Glyph = 'h',
+            Name = "a howler",
+            Behaviour = MonsterBehaviour.Howler,
+            AggroRadius = 6,
+            CoinReward = 1,
+        };
+
     private static readonly string[] Corridor =
     [
         "#########",
@@ -286,5 +296,134 @@ public class MonsterBehaviourTests
         }
 
         Assert.Equal(0, sprung);
+    }
+
+    /// <summary>A room wide enough to stand a howler well away from a goblin.</summary>
+    private static readonly string[] Hall =
+    [
+        "####################",
+        "#..................#",
+        "#..................#",
+        "#..................#",
+        "####################",
+    ];
+
+    [Fact]
+    public void AHowlerRousesWhatIsNearIt()
+    {
+        Monster howler = Howler(new Position(5, 1));
+        Monster goblin = Goblin(new Position(10, 3), aggroRadius: 1);
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler, goblin);
+
+        Assert.False(goblin.IsAlerted);
+
+        run.Wait();
+
+        Assert.True(goblin.IsAlerted);
+    }
+
+    [Fact]
+    public void AHowlerLeavesAloneWhatIsOutOfEarshot()
+    {
+        Monster howler = Howler(new Position(2, 1));
+        Monster goblin = Goblin(new Position(18, 3), aggroRadius: 1);
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler, goblin);
+
+        run.Wait();
+
+        Assert.True(howler.IsAlerted);
+        Assert.False(goblin.IsAlerted);
+    }
+
+    [Fact]
+    public void AHowlerThatHasNotSeenThePlayerSaysNothing()
+    {
+        Monster howler = Howler(new Position(18, 3));
+        Monster goblin = Goblin(new Position(17, 1), aggroRadius: 1);
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler, goblin);
+
+        run.Wait();
+
+        Assert.False(howler.IsAlerted);
+        Assert.False(goblin.IsAlerted);
+    }
+
+    [Fact]
+    public void AHowlerCallsOnceAndThenGetsOnWithIt()
+    {
+        Monster howler = Howler(new Position(5, 1));
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler);
+
+        run.Wait();
+        Assert.Equal(new Position(5, 1), howler.Position);
+
+        // The turn after the call it closes in like anything else.
+        run.Wait();
+        Assert.Equal(new Position(4, 1), howler.Position);
+
+        Assert.Single(run.Log.Messages, message => message.Text.Contains("calls out"));
+    }
+
+    [Fact]
+    public void AHowlerRousedByAnotherDoesNotPassTheCallOn()
+    {
+        // Three in a line, each within earshot of the next but only the first
+        // within sight of the player. Relaying would wake the third.
+        Monster near = Howler(new Position(5, 1));
+        Monster middle = Howler(new Position(15, 1));
+        Monster far = Howler(new Position(19, 3));
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, near, middle, far);
+
+        for (int turn = 0; turn < 3; turn++) run.Wait();
+
+        Assert.True(near.IsAlerted);
+        Assert.True(middle.IsAlerted);
+        Assert.False(far.IsAlerted);
+    }
+
+    [Fact]
+    public void ACallIsHeardEvenWhereItCannotBeSeen()
+    {
+        // A wall between the two. The howler is near enough to notice the
+        // player and out of sight of them, which is the case the warning is
+        // for.
+        string[] twoRooms =
+        [
+            "##########",
+            "#...#....#",
+            "#...#....#",
+            "#........#",
+            "##########",
+        ];
+
+        Monster howler = Howler(new Position(6, 1));
+        Run run = Arena(twoRooms, new Position(1, 1), seed: 3, howler);
+
+        Assert.False(run.Map.IsVisible(howler.Position), "the howler was in plain sight, so this proves nothing");
+
+        run.Wait();
+
+        Assert.Contains(run.Log.Messages, message => message.Text.Contains("calls out"));
+    }
+
+    [Fact]
+    public void ACallCountsOnlyWhatItActuallyRoused()
+    {
+        Monster howler = Howler(new Position(5, 1));
+        Monster asleep = Goblin(new Position(8, 3), aggroRadius: 1);
+        Monster alreadyComing = Goblin(new Position(9, 3), aggroRadius: 1);
+        alreadyComing.IsAlerted = true;
+
+        Run run = Arena(Hall, new Position(1, 1), seed: 3, howler, asleep, alreadyComing);
+
+        run.Wait();
+
+        Assert.Contains(
+            run.Log.Messages,
+            message => message.Text == "A howler calls out. One more comes for you.");
     }
 }

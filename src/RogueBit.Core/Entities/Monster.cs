@@ -15,6 +15,9 @@ public enum MonsterBehaviour
     /// <summary>Chases while it is whole, and runs once it is hurt.</summary>
     Scavenger,
 
+    /// <summary>Chases, and on seeing the player calls everything nearby to it.</summary>
+    Howler,
+
     /// <summary>Chases, hits hard, and hits harder once it is hurt.</summary>
     Boss,
 }
