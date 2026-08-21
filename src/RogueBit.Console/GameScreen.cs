@@ -43,6 +43,13 @@ public sealed class GameScreen : SadConsole.Console
     private bool showingLog;
     private bool scoreRecorded;
 
+    /// <summary>
+    /// The best on this seed before this run was written down. It is read at
+    /// that moment and kept, because reading it back afterwards would compare
+    /// the run against itself and every run would look like its own best.
+    /// </summary>
+    private int bestOnThisSeed;
+
     public GameScreen(Run run, Theme theme, SaveSystem saves, bool effectsEnabled = true)
         : base(ScreenWidth, ScreenHeight)
     {
@@ -113,6 +120,7 @@ public sealed class GameScreen : SadConsole.Console
                 run = run.Restart();
                 showingInventory = false;
                 scoreRecorded = false;
+                bestOnThisSeed = 0;
                 effects.Clear();
                 Draw();
             }
@@ -159,6 +167,7 @@ public sealed class GameScreen : SadConsole.Console
 
         scoreRecorded = true;
 
+        bestOnThisSeed = saves.History.BestOn(run.Seed);
         saves.History.Add(new FinishedRun(run.Seed, run.Score, run.DeepestDepth, run.Turns, run.HasWon));
 
         saves.Delete();
@@ -487,7 +496,7 @@ public sealed class GameScreen : SadConsole.Console
 
     private void DrawGameOver()
     {
-        string[] lines = EndOfRun.Lines(run, saves.History.Best());
+        string[] lines = EndOfRun.Lines(run, saves.History.Best(), bestOnThisSeed);
 
         // Green for a win, red for a death, so the ending reads before the words do.
         Color panel = run.HasWon ? new Color(14, 44, 26) : new Color(48, 16, 16);

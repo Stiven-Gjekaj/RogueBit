@@ -63,10 +63,51 @@ public class EndOfRunTests
     }
 
     [Fact]
-    public void TheBestSoFarIsWhateverItWasToldTheBestIs()
+    public void TheBestOnAnySeedIsWhateverItWasToldTheBestIs()
     {
         Run run = new(1);
 
-        Assert.Contains("Best so far 1234.", EndOfRun.Lines(run, best: 1234));
+        Assert.Contains("Best on any seed 1234.", EndOfRun.Lines(run, best: 1234));
+    }
+
+    [Fact]
+    public void ASeedNobodyHasFinishedIsSaidToBeANewOne()
+    {
+        Run run = new(31337);
+
+        Assert.Contains("Seed 31337, played through for the first time.", EndOfRun.Lines(run, best: 900));
+    }
+
+    [Fact]
+    public void BeatingTheSeedSaysSoAndSaysWhatWasBeaten()
+    {
+        Run run = new(8);
+        run.Player.TakeCoins(50);
+
+        Assert.Contains(
+            $"Your best on seed 8, beating 10.",
+            EndOfRun.Lines(run, best: 900, bestOnThisSeed: 10));
+    }
+
+    [Fact]
+    public void FallingShortOfTheSeedSaysWhatToBeat()
+    {
+        Run run = new(8);
+
+        Assert.Contains(
+            "Your best on seed 8 is 400.",
+            EndOfRun.Lines(run, best: 900, bestOnThisSeed: 400));
+    }
+
+    [Fact]
+    public void MatchingTheSeedIsNotBeatingIt()
+    {
+        Run run = new(8);
+        run.Player.TakeCoins(40);
+
+        Assert.Equal(40, run.Score);
+        Assert.Contains(
+            "Your best on seed 8 is 40.",
+            EndOfRun.Lines(run, best: 900, bestOnThisSeed: 40));
     }
 }
