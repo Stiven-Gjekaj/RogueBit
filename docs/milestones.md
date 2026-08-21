@@ -48,15 +48,24 @@ is on them.
 
 - **More than one way to build a character.** Right now every run plays the
   same, because the only choice is which weapon to carry.
-- **Monsters that do something other than walk at you.** A monster that flees
-  when hurt, or one that calls others, changes how a room is fought.
+- ~~**Monsters that do something other than walk at you.**~~ Done. Two of them.
+  A scavenger comes at you while it is whole and runs once it is below half,
+  which turns a fight into a chase and makes a trap behind it worth having. A
+  howler notices the player from further off than anything else and spends that
+  turn calling, and everything within twelve cells comes for the player whatever
+  it can see from where it stands. Calling costs the howler its turn, so killing
+  one first is the right answer rather than merely an obvious one.
 - ~~**A reason to go back up.**~~ Done. Every floor below the first has stairs
   where the player came in, and a floor that is left is the floor that is found
   on the way back: the same ground, the same monsters, and whatever was walked
   past still lying there. The depth bonus is paid on the deepest floor reached,
   so retreating costs ground rather than points.
-- **A record of past runs**, so a seed can be compared against how it went last
-  time.
+- ~~**A record of past runs**, so a seed can be compared against how it went
+  last time.~~ Done. `runs.json` keeps the seed, the score, the deepest floor,
+  the turns and the ending of every finished run. A seed played before opens
+  with how it went last time, so the run has something to be measured against
+  from the first turn, and the panel at the end says whether this one beat it.
+  It replaces a file that held one integer with no seed attached to it.
 
 ## Not planned
 
