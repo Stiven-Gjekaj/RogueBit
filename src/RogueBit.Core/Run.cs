@@ -596,7 +596,17 @@ public sealed class Run
 
         if (monster.IsFleeing)
         {
-            if (Flee(monster)) return;
+            if (Flee(monster))
+            {
+                // Running is real movement, so it pays the same price for the
+                // ground it crosses that a chase does. Driving a scavenger
+                // back over a trap is a way to finish one that will not stand
+                // and be hit. Wandering does not spring traps, because a
+                // monster that has not noticed the player would clear the
+                // floor of them by itself.
+                SpringTrapUnder(monster, isPlayer: false);
+                return;
+            }
 
             // Cornered. It fights if the player is within reach, and otherwise
             // stands where it is. It does not walk towards the player: a

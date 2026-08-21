@@ -225,4 +225,66 @@ public class MonsterBehaviourTests
         // passing because both runs did the same thing.
         Assert.NotEqual(whole.Position, running.Position);
     }
+
+    [Fact]
+    public void AScavengerDrivenOntoATrapSetsItOff()
+    {
+        Monster scavenger = Hurt(Scavenger(new Position(3, 1)), to: 1);
+        Run run = Arena(Corridor, new Position(1, 1), seed: 3, scavenger);
+        run.Map[new Position(4, 1)] = TileKind.TrapArmed;
+
+        run.Wait();
+
+        Assert.Equal(TileKind.TrapSprung, run.Map[new Position(4, 1)]);
+        Assert.Contains(
+            run.LastTurnEvents,
+            turn => turn.Kind == TurnEventKind.Trap && !turn.AgainstPlayer);
+    }
+
+    [Fact]
+    public void ATrapCanFinishAScavengerThatWouldNotStandAndFight()
+    {
+        Monster scavenger = Hurt(Scavenger(new Position(3, 1)), to: 1);
+        Run run = Arena(Corridor, new Position(1, 1), seed: 3, scavenger);
+        run.Map[new Position(4, 1)] = TileKind.TrapArmed;
+
+        run.Wait();
+
+        Assert.False(scavenger.IsAlive);
+    }
+
+    [Fact]
+    public void AWanderingMonsterStillWalksOverTrapsWithoutSettingThemOff()
+    {
+        // If wandering sprang traps, a floor would disarm itself while the
+        // player was elsewhere, and every trap would be spent by the time it
+        // arrived.
+        string[] room =
+        [
+            "#####",
+            "#...#",
+            "#...#",
+            "#...#",
+            "#####",
+        ];
+
+        int sprung = 0;
+
+        for (int seed = 0; seed < 40; seed++)
+        {
+            Monster goblin = Goblin(new Position(3, 3), aggroRadius: 0);
+            Run run = Arena(room, new Position(1, 1), seed, goblin);
+
+            foreach (Position cell in run.Map.WalkableCells())
+            {
+                if (cell != run.Player.Position) run.Map[cell] = TileKind.TrapArmed;
+            }
+
+            for (int turn = 0; turn < 6; turn++) run.Wait();
+
+            sprung += run.Map.WalkableCells().Count(cell => run.Map[cell] == TileKind.TrapSprung);
+        }
+
+        Assert.Equal(0, sprung);
+    }
 }
