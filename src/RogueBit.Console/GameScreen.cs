@@ -485,15 +485,7 @@ public sealed class GameScreen : SadConsole.Console
 
     private void DrawGameOver()
     {
-        string headline = run.HasWon ? "You reached the bottom and lived." : "You died.";
-
-        string[] lines =
-        [
-            headline,
-            $"Floor {run.Depth}, {run.Turns} turns, {run.Score} points.",
-            $"Best so far {saves.ReadBestScore()}.",
-            "R to play the same seed again, Escape to leave.",
-        ];
+        string[] lines = EndOfRun.Lines(run, saves.ReadBestScore());
 
         // Green for a win, red for a death, so the ending reads before the words do.
         Color panel = run.HasWon ? new Color(14, 44, 26) : new Color(48, 16, 16);
