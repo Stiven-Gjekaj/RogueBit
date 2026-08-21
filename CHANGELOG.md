@@ -4,6 +4,77 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
+## 0.3.0-alpha
+
+### Added
+
+- **A monster that runs when it is hurt.** A scavenger comes at you while it
+  is whole and breaks the moment it is below half, taking whichever of the
+  eight steps puts the most ground between the two of you. Cornered it fights
+  whatever is in reach, and cornered out of reach it holds still rather than
+  walking at you. Running is real movement, so a scavenger driven back over a
+  trap sets it off, which is how you finish one that will not stand and be
+  hit. Nothing about the choice draws from the run's chance, so two runs of
+  one seed still match to the turn.
+- **A monster that calls the others to it.** A howler notices the player from
+  further off than anything else and spends that turn calling. Everything
+  within twelve cells comes for the player whatever it can see from where it
+  stands. Calling costs the howler its turn, so killing one first is the right
+  answer rather than merely an obvious one, and a howler roused by another
+  howler does not call, so one sighting cannot travel a floor by relay. The
+  call is written to the log whether or not the player can see it, because a
+  call is a sound.
+- **A record of every finished run**, in `runs.json` beside the save. It keeps
+  the seed, the score, the deepest floor, the turns and the ending. Starting a
+  seed played before opens with the floor it reached and what it scored, and
+  the panel at the end says whether this run is the best on that seed and what
+  there is left to beat. It is written beside the target and moved over it,
+  and it carries a version it refuses to read past, both the way the save has
+  always been written.
+- **A tool that works out the recording route**, in `tools/RogueBit.Route`. It
+  plays a seed headlessly until the floor is worth looking at, writes that run,
+  and prints the keys that finish it, and it will not offer a walk it has not
+  played out and seen go through a doorway, onto a trap and round a corner.
+  The recording on the front page could not be made again from the repository
+  before this.
+
+### Changed
+
+- **What lives on a floor is decided by bands that do not overlap.** They used
+  to be thresholds that ran from zero and swallowed each other, so what a line
+  was worth depended on every line above it. Adding one kind at the top halved
+  another at the bottom and nothing said so. Counted over four hundred seeds a
+  floor, it now reads: goblins 56 and jackals 26 on floor two, scavengers from
+  floor two, howlers from floor three, and goblins 30 with four other kinds
+  between 10 and 26 from floor four down. Floor one is still goblins and only
+  goblins.
+- **The recording on the front page** was made before doors, traps or diagonal
+  movement existed, twenty three commits ago, directly under a banner that had
+  been retaken and does show doorways. It is now seed 2, floor one, walking a
+  corridor a corner at a time, through a doorway, onto a trap, and finishing
+  beside a goblin with the status row reporting what the goblin has left.
+- **The sample floor** under it is the output of `--print-floor` on the same
+  seed, so both exhibits show the same game and anybody can print the second
+  one for themselves. The old block had no doorway anywhere in it.
+- **`scores.json` is no longer read or written.** It held one integer, the best
+  score across every seed ever played, with no seed attached to it. Nothing
+  migrates it, because carrying that number across would mean inventing a run
+  that was never played. The file is left where it is rather than deleted.
+
+### Fixed
+
+- **The key that says it saves the run saves it.** Pressing `S` walked south
+  and had done since WASD was offered alongside hjkl: `S` is in the movement
+  table, the movement table is read first, and the branch that saved sat below
+  it and was never once reached. Saving is now `F5`. The two tables live in one
+  file and a test reads them both, because a key in both of them fails in
+  silence.
+- **The panel at the end of a run names the deepest floor reached.** It named
+  the floor the body was lying on while the score was paid for the deepest, so
+  climbing from six to three and dying there put two numbers that disagreed on
+  one panel. The words came out of the drawing to make this readable by
+  anything other than a person looking at a window.
+
 ## 0.2.0-alpha
 
 ### Added
