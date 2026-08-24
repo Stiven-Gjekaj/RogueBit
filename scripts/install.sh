@@ -34,7 +34,10 @@ while [ $# -gt 0 ]; do
         --to)      [ $# -ge 2 ] || die "--to needs a directory after it.";  home="$2";    shift 2 ;;
         --bin)     [ $# -ge 2 ] || die "--bin needs a directory after it."; bin="$2";     shift 2 ;;
         --uninstall) uninstall=yes; shift ;;
-        -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        # Every comment line under the shebang, stopping at the first line
+        # that is not one. It counted to a fixed line number before, and the
+        # count was one line long, so --help ended by printing "set -eu".
+        -h|--help) awk 'NR > 1 { if ($0 !~ /^#/) exit; sub(/^# ?/, ""); print }' "$0"; exit 0 ;;
         *) die "'$1' is not an option this script knows. Try --help." ;;
     esac
 done
