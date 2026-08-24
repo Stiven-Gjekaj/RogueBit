@@ -46,6 +46,16 @@ jobs:
       - name: Test the frontend logic
         run: dotnet test tests/RogueBit.Console.Tests/RogueBit.Console.Tests.csproj --no-restore --verbosity normal
 
+      # The install scripts are not built or tested by anything else here. The
+      # install workflow runs them whole against a real release, so it only
+      # ever sees the path where the API answers. This covers the other one.
+      - name: Test how the install scripts find a release
+        run: sh tests/install/run.sh
+
+      - name: Test how the install script for Windows finds a release
+        shell: pwsh
+        run: ./tests/install/run.ps1
+
   compile:
     name: compile the window on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
