@@ -76,16 +76,66 @@ $asset = 'RogueBit-win-x64.zip'
 
 # ------------------------------------------------------------- the release ---
 
+# Asks up to three times, waiting twice as long after each refusal, and gives
+# back nothing rather than throwing. A 504 is weather rather than an answer.
+function Read-Retrying([scriptblock] $Ask) {
+    $wait = 1
+
+    for ($try = 1; $try -le 3; $try++) {
+        try { return & $Ask } catch { }
+
+        if ($try -lt 3) {
+            Start-Sleep -Seconds $wait
+            $wait = $wait * 2
+        }
+    }
+
+    return $null
+}
+
+# The tag of the newest release in a releases feed, or nothing.
+#
+# The tag comes off the link to the release's own page and not off the entry
+# title. A title is whatever the release was named, which is the tag here by
+# habit rather than by rule.
+function Get-NewestTagFromFeed([xml] $Feed) {
+    $newest = @($Feed.feed.entry)[0]
+    if (-not $newest) { return $null }
+
+    $link = @($newest.link | Where-Object { $_.rel -eq 'alternate' })[0].href
+    if ($link -match '/releases/tag/(.+)$') { return $Matches[1] }
+
+    return $null
+}
+
 if (-not $Version) {
     Write-Host 'Looking for the newest release...'
 
     # Not /releases/latest. That endpoint skips pre-releases, and every RogueBit
     # release so far is one, so it answers 404 here. This asks for the newest
     # release of any kind instead.
-    $releases = Invoke-RestMethod "https://api.github.com/repos/$repo/releases?per_page=1"
+    $releases = Read-Retrying { Invoke-RestMethod "https://api.github.com/repos/$repo/releases?per_page=1" }
     $Version = @($releases)[0].tag_name
 
-    if (-not $Version) { Fail 'Could not work out the newest release. Pass one with -Version.' }
+    # The API allows sixty unauthenticated requests an hour to each address,
+    # and anybody behind a company or a campus NAT shares that budget with
+    # everybody else behind it. The releases feed is served by github.com
+    # rather than by the API, so it is not on that budget at all.
+    if (-not $Version) {
+        Write-Host 'The API would not say. Asking the releases feed instead...'
+
+        $feed = Read-Retrying { [xml] (Invoke-WebRequest "https://github.com/$repo/releases.atom").Content }
+        if ($feed) { $Version = Get-NewestTagFromFeed $feed }
+    }
+
+    if (-not $Version) {
+        Fail @"
+Could not work out which release is the newest. Neither the API nor the
+       releases feed would answer. Pass one with -Version, for example
+       -Version v0.3.0-alpha. They are listed at
+       https://github.com/$repo/releases
+"@
+    }
 }
 
 $base = "https://github.com/$repo/releases/download/$Version"
