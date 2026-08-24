@@ -4,6 +4,22 @@ All notable changes to RogueBit are recorded here. The format is based on
 Keep a Changelog (https://keepachangelog.com), and this project follows
 Semantic Versioning.
 
+## Unreleased
+
+### Fixed
+
+- **The installer keeps asking when the release lookup is refused.** The
+  install workflow failed twice on macOS while passing on Linux and Windows in
+  the same second, 403 once and 504 an hour later, both while working out
+  which release is the newest. `api.github.com` allows sixty unauthenticated
+  requests an hour to each address, and anybody sharing one address with other
+  people spends that budget between them: GitHub's macOS runners, and anybody
+  behind a company or a campus NAT. Both installers now try three times and
+  then ask the releases feed, which `github.com` serves rather than the API
+  and which is not on that budget. Nothing about the installed build changes.
+- **`--help` no longer prints a line of the script.** It took a fixed range of
+  lines and the range was one line too long, so it ended with `set -eu`.
+
 ## 0.3.0-alpha
 
 ### Added
